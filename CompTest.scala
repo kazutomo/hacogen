@@ -27,7 +27,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
     val flushed = peek(c.io.flushed)
     val flushedbuflen = peek(c.io.flushedbuflen)
     pw.write("OUT: ")
-    for (i <- 0 to 15) { // use the param
+    for (i <- 0 to 15) { // XXX: use the param
       val out = peek(c.io.out(i))
       pw.write(s"$out ")
     }
@@ -40,11 +40,12 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
   println("==CompUnitTester==")
 
   val fs = parsePixelStat("./pixelstat.txt")
-  val rn = new scala.util.Random(1234)
+  val seed = 1234;
+  val rn = new scala.util.Random(seed)
   var norig = 0
   var ncompressed = 0
 
-  for (i <- 0 to 1) {
+  for (i <- 0 to 10) {
     val fno = 34 + i
     for (cno <- 7 to 0 by -1 ) {
       val rpx = List.tabulate(8)(rno => pick_nbit(rn.nextDouble, fs(fno).get(cno, rno)))
