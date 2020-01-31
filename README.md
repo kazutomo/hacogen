@@ -9,12 +9,15 @@ are not well-organized now. I will add more details here and sort out
 and improve the codes one by one.
 
 
-Getting Started:
+Getting Started
+---------------
 
-  $ git clone https://github.com/kazutomo/hacogen.git
-  $ cd hacogen
-  $ make v
+     $ git clone https://github.com/kazutomo/hacogen.git
+     $ cd hacogen
+     $ make v
 
 
-----
+
+
+
 Developed by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
