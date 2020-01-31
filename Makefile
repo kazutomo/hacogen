@@ -34,3 +34,4 @@ h help:
 
 clean:
 	rm -rf project target test_run_dir generated *.class
+	rm -rf *.fir *.anno.json
