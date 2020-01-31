@@ -31,7 +31,11 @@ class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 1
   io.bufcursel := bufsel_reg
   io.bufcurpos := bufpos_reg
 
-  val flushed = ((bufpos_reg + io.nsrc) >= nelems_dst.U)
+  val posupdated = Wire(UInt((log2Ceil(nelems_dst)+1).W))
+
+  posupdated := bufpos_reg + io.nsrc
+
+  val flushed = (posupdated >= nelems_dst.U)
 
   when (flushed) {
     io.bufsel := bufsel_reg + 1.U
