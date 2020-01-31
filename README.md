@@ -14,10 +14,30 @@ Getting Started
 
      $ git clone https://github.com/kazutomo/hacogen.git
      $ cd hacogen
+     $ make t
+
+
+How to use HACOGen
+--------------
+
+     $ make test       # run Scala test
+     $ make simulate   # invoke Verilator
+     $ make verilog    # only generate Verilog codes
+
+Shorter target names for convinice
+
+     $ make t
+     $ make s
      $ make v
 
+To test invididual module
 
+     $ make test T=selector
 
+To list available target
+
+     $ make list
+     Available targets: header, selector, squeeze, stbuf
 
 
 Developed by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>

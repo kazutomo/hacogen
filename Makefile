@@ -29,6 +29,10 @@ t test:
 s simulate:
 	sbt "test:runMain hwcomp.TestMain $T --backend-name verilator"
 
+l list:
+	@echo "Available targets: header, selector, squeeze, stbuf"
+#	sbt "test:runMain hwcomp.TestMain list"
+
 h help:
 	sbt "test:runMain hwcomp.TestMain --help"
 
