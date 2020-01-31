@@ -1,13 +1,27 @@
+T=comp
 
-
-T=default
 
 all:
-	@echo [targets]
-	@echo "t (test), v (verilog), h (help) or clean"
+	@echo "To run HACOGen:"
 	@echo ""
-	@echo "Option T=targetname"
-	@echo "'make T=l' shows the list"
+	@echo "$ make test       # run Scala test"
+	@echo "$ make simulate   # invoke Verilator"
+	@echo "$ make verilog    # only generate Verilog codes"
+	@echo ""
+	@echo "Shorter form for convinice"
+	@echo "$ make t"
+	@echo "$ make s"
+	@echo "$ make v"
+	@echo ""
+	@echo "To test invididual module"
+	@echo "$ make test T=$target"
+	@echo ""
+	@echo "target list: header, selector, squeeze, stbuf"
+	@echo ""
+
+
+v verilog:
+	sbt "test:runMain hwcomp.TestMain $T:verilog"
 
 t test:
 	sbt "test:runMain hwcomp.TestMain $T"

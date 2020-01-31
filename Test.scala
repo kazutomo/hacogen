@@ -9,48 +9,74 @@ import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
 object TestMain extends App {
-
-  for (a <- args) println("===" + a)
-
-  val modelist = List(
-    "header", "selector", "squeeze", "stbuf", "comp",
-    "headerv", "selectorv", "squeezev", "stbufv", "compv" // verilog only
-  )
-
-  val mode = if (args.length > 0) args(0) else "comp"
-
   val nelems_src = 8
   val nelems_dst = 16
 
-  println("MODE=" + mode)
+  // component target list.
+  val targetlist = List(
+    "header",  "selector",  "squeeze",  "stbuf", "comp"
+  )
+
+  val a = if (args.length > 0) args(0) else "comp"
+  val tmp = a.split(":")
+
+  val target = tmp(0)
+  val mode = if (tmp.length > 1) tmp(1) else "test"
 
   mode match {
+    case "test" => {}
+    case "verilog" => {}
+    case _ => println(f"Warning: $mode is not a valid mode")
+  }
+
+  println(f"CONFIGS: nelems_src=$nelems_src  nelems_dst=$nelems_dst")
+  println(f"MODE=$mode TARGET=$target")
+
+  target match {
+
     case "list" =>
-      println("*mode list")
-      for (m <- modelist) {
-        println(m)
-      }
-    // unit test
+      println("*target list")
+      for (t <- targetlist)  println(t)
+
     case "header" =>
-      println("@Header Test")
-      //iotesters.Driver.execute(args, () => new Header(nelems_src, nelems_dst) )  { c => new HeaderUnitTester(c) }
-      chisel3.Driver.execute(args, () => new Header(nelems_src, nelems_dst) ) // no randomization
+      mode match {
+        case "verilog" =>
+          chisel3.Driver.execute(args, () => new Header(nelems_src, nelems_dst) )
+        case _ =>
+          iotesters.Driver.execute(args, () => new Header(nelems_src, nelems_dst) )  { c => new HeaderUnitTester(c) }
+      }
+
     case "selector" =>
-      println("@Selector Test")
-      iotesters.Driver.execute(args, () => new Selector(nelems_src, nelems_dst) )  { c => new SelectorUnitTester(c) }
+      mode match {
+        case "verilog" =>
+          chisel3.Driver.execute(args, () => new Selector(nelems_src, nelems_dst) )
+        case _ =>
+          iotesters.Driver.execute(args, () => new Selector(nelems_src, nelems_dst) )  { c => new SelectorUnitTester(c) }
+      }
+
     case "stbuf" =>
-      println("@STBuf Test")
-      iotesters.Driver.execute(args, () => new STBuf(nelems_src, nelems_dst) )  { c => new STBufUnitTester(c) }
+      mode match {
+        case "verilog" =>
+          chisel3.Driver.execute(args, () => new STBuf(nelems_src, nelems_dst) )
+        case _ =>
+          iotesters.Driver.execute(args, () => new STBuf(nelems_src, nelems_dst) )  { c => new STBufUnitTester(c) }
+      }
+
     case "squeeze" =>
-      println("@Squeeze Test")
-      iotesters.Driver.execute(args, () => new Squeeze(nelems_src, nelems_dst) )  { c => new SqueezeUnitTester(c) }
-    // delay is just a simple Chisel example, not part of the compressor
-    case "delay" =>
-      println("@Delay Test")
-      iotesters.Driver.execute(args, () => new Delay() )  { c => new DelayUnitTester(c) }
-    // all compressor components integrated
+      mode match {
+        case "verilog" =>
+          chisel3.Driver.execute(args, () => new Squeeze(nelems_src, nelems_dst) )
+        case _ =>
+          iotesters.Driver.execute(args, () => new Squeeze(nelems_src, nelems_dst) )  { c => new SqueezeUnitTester(c) }
+      }
+
     case _ =>
-      println("@Main Comp Test")
-      iotesters.Driver.execute(args, () => new Comp(nelems_src, nelems_dst) )  { c => new CompUnitTester(c) }
+      mode match {
+        case "verilog" =>
+          chisel3.Driver.execute(args, () => new Comp(nelems_src, nelems_dst) )
+        case _ =>
+          iotesters.Driver.execute(args, () => new Comp(nelems_src, nelems_dst) )  { c => new CompUnitTester(c) }
+      }
+
   }
 }
