@@ -7,7 +7,7 @@ all:
 	@echo "t (test), v (verilog), h (help) or clean"
 	@echo ""
 	@echo "Option T=targetname"
-	@echo "`make T=l` shows the list"
+	@echo "'make T=l' shows the list"
 
 t test:
 	sbt "test:runMain hwcomp.TestMain $T"
