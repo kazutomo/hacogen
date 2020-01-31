@@ -12,7 +12,7 @@ all:
 t test:
 	sbt "test:runMain hwcomp.TestMain $T"
 
-v verilog:
+s simulate:
 	sbt "test:runMain hwcomp.TestMain $T --backend-name verilator"
 
 h help:

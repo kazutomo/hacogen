@@ -10,11 +10,14 @@ import chisel3.iotesters.{Driver, PeekPokeTester}
 
 object TestMain extends App {
 
+  for (a <- args) println("===" + a)
+
   val modelist = List(
-    "header", "selector", "squeeze", "stbuf", "default"
+    "header", "selector", "squeeze", "stbuf", "comp",
+    "headerv", "selectorv", "squeezev", "stbufv", "compv" // verilog only
   )
 
-  val mode = if (args.length > 0) args(0) else "default"
+  val mode = if (args.length > 0) args(0) else "comp"
 
   val nelems_src = 8
   val nelems_dst = 16
@@ -30,8 +33,8 @@ object TestMain extends App {
     // unit test
     case "header" =>
       println("@Header Test")
-      iotesters.Driver.execute(args, () => new Header(nelems_src, nelems_dst) )  { c => new HeaderUnitTester(c) }
-      //chisel3.Driver.execute(args, () => new Header(nelems_src, nelems_dst) ) // no randomization
+      //iotesters.Driver.execute(args, () => new Header(nelems_src, nelems_dst) )  { c => new HeaderUnitTester(c) }
+      chisel3.Driver.execute(args, () => new Header(nelems_src, nelems_dst) ) // no randomization
     case "selector" =>
       println("@Selector Test")
       iotesters.Driver.execute(args, () => new Selector(nelems_src, nelems_dst) )  { c => new SelectorUnitTester(c) }
