@@ -14,9 +14,9 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
   def update(rpx: List[Int])  : List[Int] = {
     var idx = 0
-    pw.write("IN : ")
     for (r <- rpx) {
-      pw.write(r + " ")
+      val tmp = fillbits(r)
+      pw.write("%02x ".format(tmp))
       poke(c.io.in(idx), fillbits(r))
       idx += 1
     }
@@ -29,12 +29,11 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
     val bufpos = peek(c.io.bufpos)
     val flushed = peek(c.io.flushed)
     val flushedbuflen = peek(c.io.flushedbuflen)
-    pw.write("OUT: ")
     for (i <- 0 until npxs) {
       val out = peek(c.io.out(i))
-      pw.write(s"$out ")
+      pw.write(f"$out%02x ")
     }
-    pw.write(s"n=$ndata sel=$bufsel pos=$bufpos fl=$flushed flblen=$flushedbuflen\n")
+    pw.write(s"n=$ndata s=$bufsel p=$bufpos fl=$flushed/len=$flushedbuflen\n")
 
     return List.tabulate(npxs+1)(i => if (i==0) flushedbuflen.toInt else peek(c.io.out(i-1)).toInt )
   }
@@ -42,7 +41,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
   println("==CompUnitTester==")
 
   val fs = parsePixelStat("./pixelstat.txt")
-  val seed = 1234;
+  val seed = 123456;
   val rn = new scala.util.Random(seed)
   var norig = 0
   var ncompressed = 0

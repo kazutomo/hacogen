@@ -54,4 +54,10 @@ class Squeeze(val nelems:Int = 8, elemsize:Int = 16) extends Module {
   }
   io.ndata := s(nelems-1).io.posout
   io.out   := s(nelems-1).io.out
+
+  //printf("in : ")
+  //for (i <- 0 until nelems)  printf("%d ", io.in(i))
+  //printf("\nout: ")
+  //for (i <- 0 until nelems)  printf("%d ", io.out(i))
+  //printf("\n")
 }
