@@ -40,10 +40,18 @@ To list available target:
      Available targets: header, selector, squeeze, stbuf
 
 
-A simulation result
--------------------
+Design RTL view
+---------------
+
+<img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/comp-rtl-view.png"  width="512" />
+
+
+Simulation results
+------------------
 
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/haco-wave.png"  width="512" />
+
+
 
 
 ----
