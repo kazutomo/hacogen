@@ -12,12 +12,21 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
   def fillbits(n: Int) = (1<<n) - 1
 
+  def zerotrimmed(rpx: List[Int]) : List[Int] = {
+    val headerlist = List.tabulate(rpx.length)(i => if (rpx(i) == 0) 0 else 1<<i)
+    val header = headerlist.reduce(_ + _)
+    val rpxf = rpx.map(x => fillbits(x))
+    val nonzero = rpxf.filter(x => x > 0)
+
+    return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1))
+  }
+
   def update(rpx: List[Int])  : List[Int] = {
     var idx = 0
     for (r <- rpx) {
       val tmp = fillbits(r)
       pw.write("%02x ".format(tmp))
-      poke(c.io.in(idx), fillbits(r))
+      poke(c.io.in(idx), tmp)
       idx += 1
     }
     pw.write("\n")
@@ -56,7 +65,14 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       generated_rpxs += rpx
 
       norig += 8
+
       val cdata = update(rpx)
+      val zt = zerotrimmed(rpx)
+      for (z <- zt ) {
+        pw.write(f"$z%02x ")
+      }
+      pw.write("\n")
+
       val fblen = cdata(0)
 
       if (fblen > 0 ) {
