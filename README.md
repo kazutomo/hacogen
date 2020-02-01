@@ -40,4 +40,11 @@ To list available target:
      Available targets: header, selector, squeeze, stbuf
 
 
+A simulation result
+-------------------
+
+<img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/haco-wave.png"  width="512" />
+
+
+----
 Developed by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
