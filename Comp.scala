@@ -42,7 +42,7 @@ class Comp(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 16) e
 
   sel.io.nsrc := ndata // input to sel
 
-  io.bufsel := sel.io.bufcursel // now necessary? single buffer might work
+  io.bufsel := sel.io.bufcursel
   io.bufpos := sel.io.bufcurpos // assign for test purpose
   io.flushed := sel.io.flushed   // flush now
   io.flushedbuflen := sel.io.flushedbuflen

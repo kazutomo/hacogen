@@ -16,8 +16,6 @@ class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 1
     //val dst  = Output(Vec(nelems_dst, UInt(elemsize.W)))
     val bufcursel = Output(UInt(1.W))
     val bufcurpos = Output(UInt(log2Ceil(nelems_dst).W))
-    val bufsel = Output(UInt(1.W)) // use when flush
-    val bufpos = Output(UInt((log2Ceil(nelems_dst)+1).W)) // XXX: probably not needed
     val flushed = Output(Bool())
     val flushedbuflen = Output(UInt((log2Ceil(nelems_dst)+1).W))
   })
@@ -28,8 +26,9 @@ class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 1
   // without +1, flush never becomes true
   val bufpos_reg = RegInit(0.U((log2Ceil(nelems_dst)+1).W))
 
-  io.bufcursel := bufsel_reg
-  io.bufcurpos := bufpos_reg
+  val tmpbufsel = Wire(UInt(1.W))
+  val tmpbufpos = Wire(UInt((log2Ceil(nelems_dst)+1).W))
+
 
   val posupdated = Wire(UInt((log2Ceil(nelems_dst)+1).W))
 
@@ -40,17 +39,24 @@ class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 1
   //printf("posupdated=%d flused=%d %d\n", posupdated, flushed, bufpos_reg)
 
   when (flushed) {
-    io.bufsel := bufsel_reg + 1.U
-    io.bufpos := 0.U
+    tmpbufsel := bufsel_reg + 1.U
+    tmpbufpos := io.nsrc
+
     io.flushedbuflen := bufpos_reg
+    io.bufcursel := bufsel_reg
+    io.bufcurpos := 0.U
+
   } .otherwise {
-    io.bufsel := bufsel_reg
-    io.bufpos := bufpos_reg + io.nsrc
+    tmpbufsel := bufsel_reg
+    tmpbufpos := bufpos_reg + io.nsrc
     io.flushedbuflen := 0.U
+    io.bufcursel := bufsel_reg
+    io.bufcurpos := bufpos_reg
+
   }
 
-  bufsel_reg := io.bufsel
-  bufpos_reg := io.bufpos
+  bufsel_reg := tmpbufsel
+  bufpos_reg := tmpbufpos
 
   io.flushed := flushed
 }

@@ -37,7 +37,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       val out = peek(c.io.out(i))
       pw.write(f"$out%02x ")
     }
-    pw.write(s"n=$ndata s=$bufsel p=$bufpos fl=$flushed/len=$flushedbuflen\n")
+    pw.write(f"n=$ndata s=$bufsel p=$bufpos%x fl=$flushed/len=$flushedbuflen\n")
 
     return List.tabulate(npxs+1)(i => if (i==0) flushedbuflen.toInt else peek(c.io.out(i-1)).toInt )
   }
