@@ -20,9 +20,9 @@ Getting Started
 How to use HACOGen
 --------------
 
-     $ make test       # run Scala test
-     $ make simulate   # invoke Verilator
-     $ make verilog    # only generate Verilog codes
+     $ make test       # runs Scala test.
+     $ make simulate   # invokes Verilator and generates vcd.
+     $ make verilog    # generates Verilog codes.
 
 Shorter target names for convinice
 
@@ -30,11 +30,11 @@ Shorter target names for convinice
      $ make s
      $ make v
 
-To test invididual module
+To test invididual module:
 
      $ make test T=selector
 
-To list available target
+To list available target:
 
      $ make list
      Available targets: header, selector, squeeze, stbuf
