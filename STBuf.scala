@@ -25,6 +25,7 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 16) 
     val src = Input(Vec(nelems_src+1, UInt(elemsize.W)))
     val pos = Input(UInt(log2Ceil(nelems_dst).W))
     val len = Input(UInt(log2Ceil(nelems_dst).W))
+    val flushed = Input(Bool())
     val dst  = Output(Vec(nelems_dst, UInt(elemsize.W)))
   })
 
@@ -47,7 +48,13 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 16) 
     when ( (i.U >= io.pos) && (i.U < (io.pos + io.len)) ) {
       buf(i) := sh.io.dst(i)
     } .otherwise {
-      buf(i) := buf(i)
+      when (io.flushed) {
+        when (i.U >= (io.pos + io.len)) {
+          buf(i) := 0.U
+        }
+      } .otherwise {
+        buf(i) := buf(i)
+      }
     }
   }
 

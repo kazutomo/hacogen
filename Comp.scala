@@ -50,6 +50,7 @@ class Comp(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 16) e
   stbuf.io.src := data  // sqz.io.out
   stbuf.io.pos := sel.io.bufcurpos
   stbuf.io.len := sel.io.nsrc
+  stbuf.io.flushed := sel.io.flushed
 
   io.out := stbuf.io.dst
 }
