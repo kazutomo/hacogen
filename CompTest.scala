@@ -16,7 +16,6 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
     val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
     val header = headerlist.reduce(_ + _)
     val nonzero = px.filter(x => x > 0)
-
     return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1))
   }
 
@@ -26,7 +25,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       poke(c.io.in(idx), r)
       idx += 1
     }
-    val npxs = 16 // XXX: use the param
+    val npxs = c.nelems_dst
 
     val ndata = peek(c.io.ndata)
     val bufsel = peek(c.io.bufsel)
@@ -51,7 +50,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
   var ncompressed = 0
   var nframes = 3  // fs.length for max
   var generated_rpxs = new ListBuffer[List[Int]]()
-  var npixels = 8 // XXX: params
+  var npixels = c.nelems_src
 
   for (i <- 0 until nframes) { // generates N frames of 8x8 data
     val fno = i
@@ -61,7 +60,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
       generated_rpxs += px
 
-      norig += 8
+      norig += c.nelems_src
 
       for (p <- px ) pw.write(f"$p%02x ")
       pw.write(" => ")
