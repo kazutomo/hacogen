@@ -77,6 +77,5 @@ object TestMain extends App {
         case _ =>
           iotesters.Driver.execute(args, () => new Comp(nelems_src, nelems_dst) )  { c => new CompUnitTester(c) }
       }
-
   }
 }
