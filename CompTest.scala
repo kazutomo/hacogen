@@ -17,7 +17,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
   def fillbits(n: Int) = (1<<n) - 1
 
-  def zerotrimmed(px: List[Int]) : List[Int] = {
+  def compressor(px: List[Int]) : List[Int] = {
     val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
     val header = headerlist.reduce(_ + _) | (1 << (c.elemsize-1))
     val nonzero = px.filter(x => x > 0)
@@ -56,6 +56,8 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
   var nframes = 3  // fs.length for max
   var generated_rpxs = new ListBuffer[List[Int]]()
   var npixels = c.nelems_src
+  var compressedchunks = new ListBuffer[List[Int]]()
+  var failed = 0
 
   for (i <- 0 until nframes) { // generates N frames of 8x8 data
     val fno = i
@@ -69,23 +71,45 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
       for (p <- px ) pw.write(f"$p%02x ")
       pw.write(" => ")
-      val zt = zerotrimmed(px)
-      for (z <- zt ) pw.write(f"$z%02x ")
-      pw.write("\n")
 
       val cdata = update(px)
-
       val fblen = cdata(0)
+
+      val zt = compressor(px)
+      if (fblen == 0) {
+        compressedchunks += zt
+      }
+      for (z <- zt ) pw.write(f"$z%02x ")
+      pw.write("\n")
 
       if (fblen > 0 ) {
         ncompressed += fblen
         val cr = norig.toDouble / ncompressed.toDouble
         println(f"$ncompressed%4d $norig%4d $cr%4.1f")
+
+        for (i <- 0 until c.nelems_dst) {
+          if (i < compressedchunks.flatten.length ) {
+            val cchunks = compressedchunks.flatten
+            if (cdata(i+1) != cchunks(i)) {
+              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)} cchunks(${i}) = ${cchunks(i)}\n")
+              failed += 1
+            }
+          } else {
+            if (cdata(i+1) != 0) {
+              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)}\n")
+              failed += 1
+            }
+          }
+        }
+
+        compressedchunks.clear
+        compressedchunks += zt
       }
       step(1)
-
     }
   }
   pw.close
+
+  if (failed == 0) println("Validation passed!!!!")
 
 }
