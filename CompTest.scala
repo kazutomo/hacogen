@@ -88,17 +88,18 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
         ncompressed += fblen
         val cr = norig.toDouble / ncompressed.toDouble
         println(f"$ncompressed%4d $norig%4d $cr%4.1f")
+        pw.write(f"--------- comp.ratio=$cr%4.1f\n")
 
         for (i <- 0 until c.nelems_dst) {
           if (i < compressedchunks.flatten.length ) {
             val cchunks = compressedchunks.flatten
             if (cdata(i+1) != cchunks(i)) {
-              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)} cchunks(${i}) = ${cchunks(i)}\n")
+              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)}%x cchunks(${i}) = ${cchunks(i)}%x\n")
               failed += 1
             }
           } else {
             if (cdata(i+1) != 0) {
-              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)}\n")
+              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)}%x\n")
               failed += 1
             }
           }

@@ -63,6 +63,9 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 
     }
   }
 
+  // Fix: the exact fit case. e.g., 14 elements are filled at the
+  // previous cycle and the new data is 2 elements.
+
   io.dst := buf
 }
 

@@ -22,7 +22,7 @@ class Comp(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 1
     val bufsel = Output(UInt(1.W))
     val bufpos = Output(UInt(log2Ceil(nelems_dst).W))
     val flushed = Output(Bool())
-    val flushedbuflen = Output(UInt(log2Ceil(nelems_dst).W))
+    val flushedbuflen = Output(UInt(log2Ceil(nelems_dst+1).W))
   })
 
   val sqz   = Module(new Squeeze(nelems_src, elemsize))
