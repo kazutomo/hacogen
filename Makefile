@@ -1,5 +1,7 @@
-T=comp
+# HACOGen makefile
+# written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
 
+T=comp
 
 all:
 	@echo "To run HACOGen:"
@@ -21,20 +23,20 @@ all:
 
 
 v verilog:
-	sbt "test:runMain hwcomp.TestMain $T:verilog"
+	sbt "test:runMain hacogen.TestMain $T:verilog"
 
 t test:
-	sbt "test:runMain hwcomp.TestMain $T"
+	sbt "test:runMain hacogen.TestMain $T"
 
 s simulate:
-	sbt "test:runMain hwcomp.TestMain $T --backend-name verilator"
+	sbt "test:runMain hacogen.TestMain $T --backend-name verilator"
 
 l list:
 	@echo "Available targets: header, selector, squeeze, stbuf"
-#	sbt "test:runMain hwcomp.TestMain list"
+#	sbt "test:runMain hacogen.TestMain list"
 
 h help:
-	sbt "test:runMain hwcomp.TestMain --help"
+	sbt "test:runMain hacogen.TestMain --help"
 
 clean:
 	rm -rf project target test_run_dir generated *.class
