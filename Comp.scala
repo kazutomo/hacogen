@@ -3,7 +3,7 @@ package hwcomp
 import chisel3._
 import chisel3.util.log2Ceil
 
-class Comp(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 16) extends Module {
+class Comp(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 16) extends Module {
   val io = IO(new Bundle {
     val in  = Input(Vec(nelems_src, UInt(elemsize.W)))
     val out = Output(Vec(nelems_dst, UInt(elemsize.W)))

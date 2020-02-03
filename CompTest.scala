@@ -14,7 +14,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
   def zerotrimmed(px: List[Int]) : List[Int] = {
     val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
-    val header = headerlist.reduce(_ + _)
+    val header = headerlist.reduce(_ + _) | (1 << (c.elemsize-1))
     val nonzero = px.filter(x => x > 0)
     return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1))
   }

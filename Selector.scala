@@ -7,7 +7,7 @@ import chisel3.util.log2Ceil
 // a signal to flush an incomplete buf (e.g., the end of the streaming)
 //
 
-class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 16) extends Module {
+class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 16) extends Module {
   val io = IO(new Bundle {
     // the number of valid elements in src is variable (0..nsrc)
     //val src  = Input(Vec(nelems_src, UInt(elemsize.W)))

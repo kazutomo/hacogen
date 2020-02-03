@@ -5,7 +5,7 @@ import chisel3.util.log2Ceil
 
 // to covert a sparse data into a dense data one by one
 // when if in(pos) has zero, shift up the rest of data; remove the in(pos)
-class ShiftUp(val nelems:Int = 8, elemsize:Int = 16) extends Module {
+class ShiftUp(val nelems:Int = 8, val elemsize:Int = 16) extends Module {
   val io = IO(new Bundle {
     val pos    = Input(UInt((log2Ceil(nelems)+1).W))
     val in     = Input(Vec(nelems, UInt(elemsize.W)))
@@ -34,7 +34,7 @@ class ShiftUp(val nelems:Int = 8, elemsize:Int = 16) extends Module {
   io.out(nelems-1) := Mux(sel, 0.U, io.in(nelems-1))
 }
 
-class Squeeze(val nelems:Int = 8, elemsize:Int = 16) extends Module {
+class Squeeze(val nelems:Int = 8, val elemsize:Int = 16) extends Module {
     val io = IO(new Bundle {
       val in  = Input(Vec(nelems, UInt(elemsize.W)))
       val out = Output(Vec(nelems, UInt(elemsize.W)))

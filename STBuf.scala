@@ -3,7 +3,7 @@ package hwcomp
 import chisel3._
 import chisel3.util.log2Ceil
 
-class ShiftElems(val nelems:Int = 16, elemsize:Int = 16) extends Module {
+class ShiftElems(val nelems:Int = 16, val elemsize:Int = 16) extends Module {
   val io = IO(new Bundle {
     val nshift = Input(UInt((log2Ceil(nelems)+1).W))
     val src = Input(Vec(nelems, UInt(elemsize.W)))
@@ -20,7 +20,7 @@ class ShiftElems(val nelems:Int = 16, elemsize:Int = 16) extends Module {
 }
 
 // staging buffer
-class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, elemsize:Int = 16) extends Module {
+class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 16) extends Module {
   val io = IO(new Bundle {
     val src = Input(Vec(nelems_src+1, UInt(elemsize.W)))
     val pos = Input(UInt(log2Ceil(nelems_dst).W))
