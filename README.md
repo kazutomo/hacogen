@@ -1,12 +1,13 @@
 HACOGen - hardware compressor generator
 
 
-Hardware compressor generator (HACOGen), written in Chisel, generates
-hardware compressor Verilog codes that compresses input data in a
-streaming manner (without stall).  Just starting up a project. It only
-generates a simple zero-skimming compressor at this point. The codes
-are not well-organized now. I will add more details here and sort out
-and improve the codes one by one.
+Hardware compressor generator (HACOGen), written in Chisel3, generates
+a stall-free hardware compressor design (Verilog codes).  The current
+version generates a simple zero-skimming compressor. The compressor
+receives data as a vector of elements (each element is 16-bit by
+default) every single cycle, compress the data and stack it into an
+internal buffer. When the buffer gets full, the flush signal is
+raised; its content is ready to be read.
 
 
 Getting Started

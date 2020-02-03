@@ -53,7 +53,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
   val rn = new scala.util.Random(seed)
   var norig = 0
   var ncompressed = 0
-  var nframes = 3  // fs.length for max
+  var nframes = fs.length  // fs.length for max
   var generated_rpxs = new ListBuffer[List[Int]]()
   var npixels = c.nelems_src
   var compressedchunks = new ListBuffer[List[Int]]()
