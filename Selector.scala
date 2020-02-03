@@ -1,3 +1,8 @@
+//
+// Selector module that updates buffer position and emits a buffer flush signal
+//
+// written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
+//
 package hwcomp
 
 import chisel3._

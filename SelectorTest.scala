@@ -1,3 +1,8 @@
+//
+// Selector tester
+//
+// written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
+//
 package hwcomp
 
 import chisel3._

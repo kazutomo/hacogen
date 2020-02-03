@@ -1,3 +1,8 @@
+//
+// pxgen - test pattern generator
+//
+// written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
+//
 package pxgen
 
 import scala.io.Source

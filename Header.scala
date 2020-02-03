@@ -1,3 +1,8 @@
+//
+// Header module that generates a meta data
+//
+// written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
+//
 package hwcomp
 
 import chisel3._
