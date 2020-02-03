@@ -58,6 +58,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
   var npixels = c.nelems_src
   var compressedchunks = new ListBuffer[List[Int]]()
   var failed = 0
+  var cycle = 0
 
   for (i <- 0 until nframes) { // generates N frames of 8x8 data
     val fno = i
@@ -69,12 +70,13 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
       norig += c.nelems_src
 
-      for (p <- px ) pw.write(f"$p%02x ")
-      pw.write(" => ")
-
+      pw.write(f"$cycle%3d: buf: ")
       val cdata = update(px)
       val fblen = cdata(0)
 
+      pw.write(f"$cycle%3d: inp: ")
+      for (p <- px ) pw.write(f"$p%02x ")
+      pw.write(" => ")
       val zt = compressor(px)
       if (fblen == 0) {
         compressedchunks += zt
@@ -106,10 +108,11 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
         compressedchunks += zt
       }
       step(1)
+      cycle += 1
     }
   }
   pw.close
 
   if (failed == 0) println("Validation passed!!!!")
-
+  else println("Validation failed. Check comp-output.txt")
 }
