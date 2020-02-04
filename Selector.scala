@@ -20,7 +20,7 @@ class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int
     //
     //val dst  = Output(Vec(nelems_dst, UInt(elemsize.W)))
     val bufcursel = Output(UInt(1.W))
-    val bufcurpos = Output(UInt(log2Ceil(nelems_dst).W))
+    val bufcurpos = Output(UInt((log2Ceil(nelems_dst)+1).W))
     val flushed = Output(Bool())
     val flushedbuflen = Output(UInt((log2Ceil(nelems_dst)+1).W))
   })
@@ -50,14 +50,12 @@ class Selector(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int
     io.flushedbuflen := bufpos_reg
     io.bufcursel := bufsel_reg
     io.bufcurpos := 0.U
-
   } .otherwise {
     tmpbufsel := bufsel_reg
     tmpbufpos := bufpos_reg + io.nsrc
     io.flushedbuflen := 0.U
     io.bufcursel := bufsel_reg
     io.bufcurpos := bufpos_reg
-
   }
 
   bufsel_reg := tmpbufsel
