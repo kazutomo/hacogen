@@ -38,7 +38,12 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 
 
   val sh = Module(new ShiftElems(nelems_dst, elemsize))
 
-  sh.io.nshift := io.pos
+  val datapos = Wire(UInt((log2Ceil(nelems_dst)+1).W))
+  val datalen = Wire(UInt((log2Ceil(nelems_dst)+1).W))
+  datapos := io.pos
+  datalen := io.len
+
+  sh.io.nshift := datapos
 
   // expand src to nelems_dst, filling 0
   for (i <- 0 to ((nelems_src+1) - 1)) {
@@ -50,11 +55,11 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 
 
   // only update dst[pos, pos+len)
   for (i <- 0 to (nelems_dst - 1) ) {
-    when ( (i.U >= io.pos) && (i.U < (io.pos + io.len)) ) {
+    when ( (i.U >= datapos) && (i.U < (datapos + datalen)) ) {
       buf(i) := sh.io.dst(i)
     } .otherwise {
       when (io.flushed) {
-        when (i.U >= (io.pos + io.len)) {
+        when (i.U >= (datapos + datalen)) {
           buf(i) := 0.U
         }
       } .otherwise {
@@ -62,9 +67,6 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 
       }
     }
   }
-
-  // Fix: the exact fit case. e.g., 14 elements are filled at the
-  // previous cycle and the new data is 2 elements.
 
   io.dst := buf
 }
