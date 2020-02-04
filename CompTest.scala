@@ -41,7 +41,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       val out = peek(c.io.out(i))
       pw.write(f"$out%02x ")
     }
-    pw.write(f"n=$ndata s=$bufsel p=$bufpos%x fl=$flushed/len=$flushedbuflen\n")
+    pw.write(f"n=$ndata p=$bufpos%x fl=$flushed/len=$flushedbuflen%x\n")
 
     return List.tabulate(npxs+1)(i => if (i==0) flushedbuflen.toInt else peek(c.io.out(i-1)).toInt )
   }
@@ -78,7 +78,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       for (p <- px ) pw.write(f"$p%02x ")
       pw.write(" => ")
       val zt = compressor(px)
-      if (fblen == 0) {
+      if (fblen == 0 || fblen == c.nelems_dst) {
         compressedchunks += zt
       }
       for (z <- zt ) pw.write(f"$z%02x ")
@@ -94,12 +94,12 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
           if (i < compressedchunks.flatten.length ) {
             val cchunks = compressedchunks.flatten
             if (cdata(i+1) != cchunks(i)) {
-              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)}%x cchunks(${i}) = ${cchunks(i)}%x\n")
+              pw.write(f"Failed to validate: i=$i hw:${cdata(i+1)}%x sw:${cchunks(i)}%x\n")
               failed += 1
             }
           } else {
             if (cdata(i+1) != 0) {
-              pw.write(f"Failed to validate: cdata(${i+1}) = ${cdata(i+1)}%x\n")
+              pw.write(f"Failed to validate: i=$i hw: should be zero, but ${cdata(i+1)}%x\n")
               failed += 1
             }
           }
@@ -115,5 +115,5 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
   pw.close
 
   if (failed == 0) println("Validation passed!!!!")
-  else println("Validation failed. Check comp-output.txt")
+  else println(f"Validation failed ($failed times). Check comp-output.txt")
 }
