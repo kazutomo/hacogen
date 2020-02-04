@@ -57,6 +57,14 @@ Simulation results
 <a href="https://raw.githubusercontent.com/kazutomo/hacogen/master/results/comp-output.txt" >simulation result in text file</a>
 
 
+RTL view (
+---------------------------
+
+<img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/rtl-view-squeeze-shiftup.png"  width="512" />
+
+<img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/rtl-view-stbuf.png"  width="512" />
+
+
 
 ----
 Developed by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
