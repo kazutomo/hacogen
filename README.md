@@ -15,8 +15,9 @@ Getting Started
 
      $ git clone https://github.com/kazutomo/hacogen.git
      $ cd hacogen
-     $ make t
+     $ make test
 
+NOTE: tested on Fedora 28 with sbt 1.3.7
 
 How to use HACOGen
 --------------
@@ -52,6 +53,8 @@ Simulation results
 
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/haco-wave.png"  width="512" />
 
+
+<a href="https://raw.githubusercontent.com/kazutomo/hacogen/master/results/comp-output.txt" >simulation result in text file</a>
 
 
 
