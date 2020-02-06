@@ -3,11 +3,11 @@ HACOGen - hardware compressor generator
 
 Hardware compressor generator (HACOGen), written in Chisel3, generates
 a stall-free hardware compressor design (Verilog codes).  The current
-version generates a simple zero-skimming compressor. The compressor
-receives data as a vector of elements (each element is 16-bit by
-default) every single cycle, compress the data and stack it into an
-internal buffer. When the buffer gets full, the flush signal is
-raised; its content is ready to be read.
+version generates a simple zero-skimming compressor logic (not
+pipelined yet). The compressor receives data as a vector of elements
+(each element is 16-bit by default) every single cycle, compress the
+data and stack it into an internal buffer. When the buffer gets full,
+the flush signal is raised; its content is ready to be read.
 
 
 Getting Started
@@ -57,8 +57,8 @@ Simulation results
 <a href="https://raw.githubusercontent.com/kazutomo/hacogen/master/results/comp-output.txt" >simulation result in text file</a>
 
 
-RTL view (
----------------------------
+Component RTL view
+------------------
 
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/rtl-view-squeeze-shiftup.png"  width="512" />
 
