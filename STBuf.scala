@@ -34,7 +34,7 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 
     val dst  = Output(Vec(nelems_dst, UInt(elemsize.W)))
   })
 
-  val buf = RegInit(VecInit(Seq.fill(nelems_dst)(0.U(elemsize.W))))
+  val buf = RegInit(VecInit(Seq.fill(nelems_dst)(0x55.U(elemsize.W))))
 
   val sh = Module(new ShiftElems(nelems_dst, elemsize))
 
@@ -60,7 +60,7 @@ class STBuf(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 
     } .otherwise {
       when (io.flushed) {
         when (i.U >= (datapos + datalen)) {
-          buf(i) := 0.U
+          buf(i) := 0x55.U  // 0x55 is tentative
         }
       } .otherwise {
         buf(i) := buf(i)

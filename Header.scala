@@ -21,5 +21,5 @@ class Header(val nelems:Int = 8, val elemsize:Int = 16) extends Module {
     printf("%d: in=%d %d\n", i.U, io.in(i), metadata(i))
   }  */
 
-  io.out := metadata.reduce(_ | _) + (1.U << (elemsize-1).U)
+  io.out := metadata.reduce(_ | _) // + (1.U << (elemsize-1).U)
 }

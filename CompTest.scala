@@ -17,9 +17,9 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
   def fillbits(n: Int) = (1<<n) - 1
 
-  def compressor(px: List[Int]) : List[Int] = {
+  def encoding(px: List[Int]) : List[Int] = {
     val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
-    val header = headerlist.reduce(_ + _) | (1 << (c.elemsize-1))
+    val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
     val nonzero = px.filter(x => x > 0)
     return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1))
   }
@@ -77,7 +77,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       pw.write(f"$cycle%3d: inp: ")
       for (p <- px ) pw.write(f"$p%02x ")
       pw.write(" => ")
-      val zt = compressor(px)
+      val zt = encoding(px)
       if (fblen == 0 || fblen == c.nelems_dst) {
         compressedchunks += zt
       }
@@ -98,8 +98,8 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
               failed += 1
             }
           } else {
-            if (cdata(i+1) != 0) {
-              pw.write(f"Failed to validate: i=$i hw: should be zero, but ${cdata(i+1)}%x\n")
+            if (cdata(i+1) != 0x55) {
+              pw.write(f"Failed to validate: i=$i hw: should be 0x55, but ${cdata(i+1)}%x\n")
               failed += 1
             }
           }
