@@ -17,6 +17,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
   def fillbits(n: Int) = (1<<n) - 1
 
+  // software-based encoding for validation
   def encoding(px: List[Int]) : List[Int] = {
     val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
     val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
@@ -24,7 +25,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
     return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1))
   }
 
-  def update(px: List[Int])  : List[Int] = {
+  def DUT(px: List[Int])  : List[Int] = {
     var idx = 0
     for (r <- px) {
       poke(c.io.in(idx), r)
@@ -42,7 +43,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       pw.write(f"$out%02x ")
     }
     pw.write(f"n=$ndata p=$bufpos%x fl=$flushed/len=$flushedbuflen%x\n")
-
+    // remove len leter since the len won't be available in the compressed data stream
     return List.tabulate(npxs+1)(i => if (i==0) flushedbuflen.toInt else peek(c.io.out(i-1)).toInt )
   }
 
@@ -71,7 +72,7 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
       norig += c.nelems_src
 
       pw.write(f"$cycle%3d: buf: ")
-      val cdata = update(px)
+      val cdata = DUT(px)
       val fblen = cdata(0)
 
       pw.write(f"$cycle%3d: inp: ")
