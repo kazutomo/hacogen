@@ -7,7 +7,7 @@ package hacogen
 
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
-import pxgen.generator._
+import pxgen.generator._  // parsePixelStat, pick_nbit
 import java.io._
 import scala.collection.mutable.ListBuffer
 
