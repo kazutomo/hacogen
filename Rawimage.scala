@@ -20,7 +20,7 @@ object RawIntImages {
   }
 
   def readimages(fn: String, w: Int, h: Int, nframes: Int) : Array[Array[Array[Int]]] = {
-    var images = ofDim[Int](nframes, w, h)
+    var images = ofDim[Int](nframes, h, w)
     val step = 4
 
     try {
@@ -34,7 +34,7 @@ object RawIntImages {
           for (x <- 0 until w) {
             var idx = y * w + x
             val v = BytesToInt(buf.slice(idx*step, idx*step+4))
-            images(fno)(x)(y) = v
+            images(fno)(y)(x) = v
           }
         }
       }
@@ -48,7 +48,7 @@ object RawIntImages {
     var buf = new Array[Byte]( (w*h) * step )
 
     for (y <- 0 until h; x <- 0 until w ) {
-      val sval : Short = if (image(x)(y) < 0) 0 else image(x)(y).toShort
+      val sval : Short = if (image(y)(x) < 0) 0 else image(y)(x).toShort
       val tmp = ShortToBytes(sval)
       val idx = y*w + x
 
@@ -70,19 +70,28 @@ object Main extends App {
   val fn = "pilatus_image_1679x1475x300_int32.raw"
   val w = 1679
   val h = 1475
+  val xoff = 100
+  val yoff = 200
+  val xd = 8
+  val yd = 8
   val nframes = 1 // 300
   val st = System.nanoTime()
   val images = RawIntImages.readimages(fn, w, h, nframes)
   val et = System.nanoTime() - st
+
+
   println(et * 1e-9 + " sec")
 
   for (fno <- 0 until nframes) {
     var zcnt = 0
-    for (y <- 0 until h; x <- 0 until w) {
-      if (images(fno)(x)(y) == 0) zcnt += 1
+    for (y <- yoff until yoff+yd) {
+      for (x <- xoff until xoff+xd) {
+        if (images(fno)(y)(x) == 0) zcnt += 1
+      }
     }
     println(fno + " " + zcnt)
   }
 
+  // write back to file
   RawIntImages.writegray(images(0), "a.gray", w, h)
 }
