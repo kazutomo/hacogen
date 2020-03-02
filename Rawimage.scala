@@ -1,5 +1,5 @@
 //package rawdata
-
+1;5202;0c
 import java.io._
 import java.nio.ByteBuffer
 import Array._
@@ -19,8 +19,8 @@ object RawIntImages {
     tmp
   }
 
-  def readimages(fn: String, w: Int, h: Int, nframes: Int) : Array[Array[Array[Int]]] = {
-    var images = ofDim[Int](nframes, h, w)
+  def readimages(fn: String, w: Int, h: Int, nframes: Int) : Array[Array[Array[Short]]] = {
+    var images = ofDim[Short](nframes, h, w)
     val step = 4
 
     try {
@@ -34,7 +34,8 @@ object RawIntImages {
           for (x <- 0 until w) {
             var idx = y * w + x
             val v = BytesToInt(buf.slice(idx*step, idx*step+4))
-            images(fno)(y)(x) = v
+            val v2 : Short = if (v < 0) {0} else {v.toShort}
+            images(fno)(y)(x) = v2
           }
         }
       }
@@ -43,7 +44,7 @@ object RawIntImages {
     images
   }
 
-  def writegray(image: Array[Array[Int]], fn: String, w: Int, h: Int) : Boolean = {
+  def writegray(image: Array[Array[Short]], fn: String, w: Int, h: Int) : Boolean = {
     val step = 4
     var buf = new Array[Byte]( (w*h) * step )
 
@@ -67,6 +68,14 @@ object RawIntImages {
 
 object Main extends App {
 
+  def printmemoryusage : Unit = {
+    val r = Runtime.getRuntime
+    println( "Free(MB) : " + (r.freeMemory >> 20) )
+    println( "Total(MB): " + (r.totalMemory >> 20) )
+  }
+
+  printmemoryusage
+
   val fn = "pilatus_image_1679x1475x300_int32.raw"
   val w = 1679
   val h = 1475
@@ -74,11 +83,12 @@ object Main extends App {
   val yoff = 200
   val xd = 8
   val yd = 8
-  val nframes = 1 // 300
+  val nframes = 10 // 300
   val st = System.nanoTime()
   val images = RawIntImages.readimages(fn, w, h, nframes)
   val et = System.nanoTime() - st
 
+  printmemoryusage
 
   println(et * 1e-9 + " sec")
 
@@ -89,7 +99,7 @@ object Main extends App {
         if (images(fno)(y)(x) == 0) zcnt += 1
       }
     }
-    println(fno + " " + zcnt)
+    println(fno + " " + zcnt + " " + (zcnt*100.0/(xd*yd)))
   }
 
   // write back to file
