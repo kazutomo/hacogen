@@ -1,5 +1,5 @@
 //package rawdata
-1;5202;0c
+
 import java.io._
 import java.nio.ByteBuffer
 import Array._
@@ -44,6 +44,28 @@ object RawIntImages {
     images
   }
 
+  def readframe(in: FileInputStream, w: Int, h: Int) : Array[Array[Short]] = {
+    var frame = ofDim[Short](h, w)
+    val step = 4
+
+    try {
+      val buf = new Array[Byte]( (w*h)*step)
+
+      in.read(buf)
+      // convert byte buf to image. not efficient
+      for (y <- 0 until h) {
+        for (x <- 0 until w) {
+          var idx = y * w + x
+          val v = BytesToInt(buf.slice(idx*step, idx*step+4))
+          val v2 : Short = if (v < 0) {0} else {v.toShort}
+          frame(y)(x) = v2
+        }
+      }
+    } // add exception handing later
+    frame
+  }
+
+
   def writegray(image: Array[Array[Short]], fn: String, w: Int, h: Int) : Boolean = {
     val step = 4
     var buf = new Array[Byte]( (w*h) * step )
@@ -74,34 +96,37 @@ object Main extends App {
     println( "Total(MB): " + (r.totalMemory >> 20) )
   }
 
-  printmemoryusage
-
   val fn = "pilatus_image_1679x1475x300_int32.raw"
   val w = 1679
   val h = 1475
-  val xoff = 100
+  val xoff = 300
   val yoff = 200
   val xd = 8
   val yd = 8
   val nframes = 10 // 300
-  val st = System.nanoTime()
-  val images = RawIntImages.readimages(fn, w, h, nframes)
-  val et = System.nanoTime() - st
 
-  printmemoryusage
+  //val st = System.nanoTime()
+  //val images = RawIntImages.readimages(fn, w, h, nframes)
+  //val et = System.nanoTime() - st
+  // println(et * 1e-9 + " sec")
+  // printmemoryusage
 
-  println(et * 1e-9 + " sec")
+  val in = new FileInputStream(fn)
 
   for (fno <- 0 until nframes) {
+    // println("pos = " + in.getChannel().position())
+
+    val fr = RawIntImages.readframe(in, w, h)
+
     var zcnt = 0
     for (y <- yoff until yoff+yd) {
       for (x <- xoff until xoff+xd) {
-        if (images(fno)(y)(x) == 0) zcnt += 1
+        if (fr(y)(x) == 0) zcnt += 1
       }
     }
     println(fno + " " + zcnt + " " + (zcnt*100.0/(xd*yd)))
   }
 
   // write back to file
-  RawIntImages.writegray(images(0), "a.gray", w, h)
+  //RawIntImages.writegray(images(0), "a.gray", w, h)
 }
