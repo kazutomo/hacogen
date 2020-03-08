@@ -97,36 +97,34 @@ object Main extends App {
   }
 
   val fn = "pilatus_image_1679x1475x300_int32.raw"
-  val w = 1679
-  val h = 1475
-  val xoff = 300
-  val yoff = 200
+  val h = 1679
+  val w = 1475
+  val yoff = 400
   val xd = 8
   val yd = 8
-  val nframes = 10 // 300
+  val nframes = 300
 
   //val st = System.nanoTime()
   //val images = RawIntImages.readimages(fn, w, h, nframes)
   //val et = System.nanoTime() - st
-  // println(et * 1e-9 + " sec")
   // printmemoryusage
 
   val in = new FileInputStream(fn)
 
   for (fno <- 0 until nframes) {
-    // println("pos = " + in.getChannel().position())
-
     val fr = RawIntImages.readframe(in, w, h)
 
-    var zcnt = 0
-    for (y <- yoff until yoff+yd) {
-      for (x <- xoff until xoff+xd) {
-        if (fr(y)(x) == 0) zcnt += 1
-      }
-    }
-    println(fno + " " + zcnt + " " + (zcnt*100.0/(xd*yd)))
-  }
+    // write back to file
+    // RawIntImages.writegray(fr, f"fr$fno.gray", w, h)
 
-  // write back to file
-  //RawIntImages.writegray(images(0), "a.gray", w, h)
+    for (xoff <- w/4*1 to w/4*3 by xd) {
+      var zcnt = 0
+      for (y <- yoff until yoff+yd) {
+        for (x <- xoff until xoff+xd) {
+          if (fr(y)(x) == 0) zcnt += 1
+        }
+      }
+      println(fno + " " + xoff + "," + yoff + " " + zcnt + " => " + (zcnt*100.0/(xd*yd)))
+    }
+  }
 }
