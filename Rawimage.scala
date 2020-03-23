@@ -44,7 +44,8 @@ object RawIntImages {
     images
   }
 
-  def readframe(in: FileInputStream, w: Int, h: Int) : Array[Array[Short]] = {
+  def readframe(in: FileInputStream, w: Int, h: Int) :
+      Array[Array[Short]] = {
     var frame = ofDim[Short](h, w)
     val step = 4
 
@@ -67,7 +68,7 @@ object RawIntImages {
 
 
   def writegray(image: Array[Array[Short]], fn: String, w: Int, h: Int) : Boolean = {
-    val step = 4
+    val step = 2
     var buf = new Array[Byte]( (w*h) * step )
 
     for (y <- 0 until h; x <- 0 until w ) {
@@ -88,7 +89,7 @@ object RawIntImages {
   }
 }
 
-object Main extends App {
+object RawimageAnalyzerMain extends App {
 
   def printmemoryusage : Unit = {
     val r = Runtime.getRuntime
@@ -96,13 +97,30 @@ object Main extends App {
     println( "Total(MB): " + (r.totalMemory >> 20) )
   }
 
-  val fn = "pilatus_image_1679x1475x300_int32.raw"
-  val h = 1679
-  val w = 1475
-  val yoff = 400
+  var fn = ""
+  var h = 0
+  var w = 0
+  var fnostart = 0
+  var fnostop = 0
+  var dumpflag = false
+  // x y steps
   val xd = 8
   val yd = 8
-  val nframes = 300
+
+
+  if (args.length < 6) {
+    println("Usage: RawimageAnalyzerMain rawimgfilename width height fnostart fnostop dump")
+    println("")
+    println("This command reads a simple raw image format that contains a number of glay scala images with 32-bit integer pixel value (its dynamic range is possible smaller). Width and Height are specified via command line. The image framenumber start and stop are also specified via command line.")
+    System.exit(1)
+  }
+
+  fn = args(0)
+  h = args(1).toInt
+  w = args(2).toInt
+  fnostart = args(3).toInt
+  fnostop = args(4).toInt
+  dumpflag = args(5).toBoolean
 
   //val st = System.nanoTime()
   //val images = RawIntImages.readimages(fn, w, h, nframes)
@@ -111,20 +129,22 @@ object Main extends App {
 
   val in = new FileInputStream(fn)
 
-  for (fno <- 0 until nframes) {
+  for (fno <- fnostart to fnostop) {
     val fr = RawIntImages.readframe(in, w, h)
 
     // write back to file
-    // RawIntImages.writegray(fr, f"fr$fno.gray", w, h)
+    if (dumpflag)   RawIntImages.writegray(fr, f"fr$fno.gray", w, h)
 
-    for (xoff <- w/4*1 to w/4*3 by xd) {
-      var zcnt = 0
-      for (y <- yoff until yoff+yd) {
-        for (x <- xoff until xoff+xd) {
-          if (fr(y)(x) == 0) zcnt += 1
+    for (xoff <- 0 until w-xd  by xd) {
+      for (yoff <- 0 until h-yd by yd) {
+        var zcnt = 0
+        for (y <- yoff until yoff+yd) {
+          for (x <- xoff until xoff+xd) {
+            if (fr(y)(x) == 0) zcnt += 1
+          }
         }
+        println(fno + " " + xoff + "," + yoff + " => " + (zcnt*100.0/(xd*yd)))
       }
-      println(fno + " " + xoff + "," + yoff + " " + zcnt + " => " + (zcnt*100.0/(xd*yd)))
     }
   }
 }
