@@ -3,7 +3,9 @@
 import java.io._
 import java.nio.ByteBuffer
 import Array._
+import scala.collection.mutable.ListBuffer
 
+// assume an image is consist of 32-bit (signed) integer pixels.
 object RawIntImages {
 
   def BytesToInt(buf: Array[Byte]) : Int = {
@@ -19,35 +21,12 @@ object RawIntImages {
     tmp
   }
 
-  def readimages(fn: String, w: Int, h: Int, nframes: Int) : Array[Array[Array[Short]]] = {
-    var images = ofDim[Short](nframes, h, w)
-    val step = 4
-
-    try {
-      val in = new FileInputStream(fn)
-      val buf = new Array[Byte]( (w*h)*step)
-
-      for (fno <- 0 until nframes) {
-        in.read(buf)
-        // convert byte buf to image. not efficient
-        for (y <- 0 until h) {
-          for (x <- 0 until w) {
-            var idx = y * w + x
-            val v = BytesToInt(buf.slice(idx*step, idx*step+4))
-            val v2 : Short = if (v < 0) {0} else {v.toShort}
-            images(fno)(y)(x) = v2
-          }
-        }
-      }
-    } // add exception handing later
-
-    images
-  }
-
   def readframe(in: FileInputStream, w: Int, h: Int) :
-      Array[Array[Short]] = {
+      (Array[Array[Short]], Short, Int) = {
     var frame = ofDim[Short](h, w)
     val step = 4
+    var maxval : Short = 0
+    var zcnt : Int = 0
 
     try {
       val buf = new Array[Byte]( (w*h)*step)
@@ -59,11 +38,13 @@ object RawIntImages {
           var idx = y * w + x
           val v = BytesToInt(buf.slice(idx*step, idx*step+4))
           val v2 : Short = if (v < 0) {0} else {v.toShort}
+          if (v2 == 0) zcnt += 1
+          if (v2 > maxval) { maxval = v2 }
           frame(y)(x) = v2
         }
       }
     } // add exception handing later
-    frame
+    (frame, maxval, zcnt)
   }
 
 
@@ -87,7 +68,16 @@ object RawIntImages {
 
     true
   }
+
+  // software-based encoding for validation
+  def encoding(px: List[Short]) : List[Short] = {
+    val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
+    val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
+    val nonzero = px.filter(x => x > 0)
+    return List.tabulate(nonzero.length+1)(i => if(i==0) header.toShort else nonzero(i-1).toShort )
+  }
 }
+
 
 object RawimageAnalyzerMain extends App {
 
@@ -107,7 +97,6 @@ object RawimageAnalyzerMain extends App {
   val xd = 8
   val yd = 8
 
-
   if (args.length < 6) {
     println("Usage: RawimageAnalyzerMain rawimgfilename width height fnostart fnostop dump")
     println("")
@@ -122,29 +111,56 @@ object RawimageAnalyzerMain extends App {
   fnostop = args(4).toInt
   dumpflag = args(5).toBoolean
 
-  //val st = System.nanoTime()
-  //val images = RawIntImages.readimages(fn, w, h, nframes)
-  //val et = System.nanoTime() - st
-  // printmemoryusage
+  var allratios = new ListBuffer[Float]()
+
 
   val in = new FileInputStream(fn)
 
+  val st = System.nanoTime()
   for (fno <- fnostart to fnostop) {
-    val fr = RawIntImages.readframe(in, w, h)
+    val (fr, maxval, zcnt) = RawIntImages.readframe(in, w, h)
 
-    // write back to file
+    // write back to file.
+    // To display an image, display -size $Wx$H -depth 16  imagefile
     if (dumpflag)   RawIntImages.writegray(fr, f"fr$fno.gray", w, h)
 
-    for (xoff <- 0 until w-xd  by xd) {
-      for (yoff <- 0 until h-yd by yd) {
-        var zcnt = 0
-        for (y <- yoff until yoff+yd) {
-          for (x <- xoff until xoff+xd) {
-            if (fr(y)(x) == 0) zcnt += 1
+    var ratios = new ListBuffer[Float]()
+
+    for (yoff <- 0 until h-yd by yd) {
+      for (xoff <- 0 until w-xd  by xd) {
+
+        for (x <- 0 until xd) {
+          val dtmp = List.tabulate(yd)(rno => fr(rno + yoff)(x + xoff))
+          val enctmp = RawIntImages.encoding(dtmp)
+
+          val cr =  (xd.toFloat / enctmp.length)
+          ratios += cr
+          /*
+          if ( dtmp.map(_.toInt).reduce( (a,b) => (a + b)) >= maxval ) {
+            println(f"($xoff,$yoff) cr=$cr%.1f :" + " " + dtmp.mkString(",") + " >> " + enctmp.mkString(",") )
           }
+           */
         }
-        println(fno + " " + xoff + "," + yoff + " => " + (zcnt*100.0/(xd*yd)))
       }
     }
+
+    if (ratios.length > 0) {
+      val rtmp = ratios.toList
+      val rmean = (rtmp.reduce( (a,b) => (a + b) )) / rtmp.length.toFloat
+      val rmin = rtmp.reduce( (a,b) => (a min b) )
+      val rmax = rtmp.reduce( (a,b) => (a max b) )
+
+      allratios += rmean
+
+      //println(f"fno=$fno%4d mean=$rmean%.2f min=$rmin%.2f rmax=$rmax%.2f")
+      //println(f"$rmean%.3f") // just compression ratio
+    }
   }
+  val et = System.nanoTime()
+  val psec = (et-st)*1e-9
+
+  val allmean = allratios.reduce((a,b) => (a+b)) / allratios.length.toFloat
+  println(f"Compression Ratio Mean = $allmean%.3f")
+
+  println(f"Processing Time[Sec] = $psec%.3f")
 }
