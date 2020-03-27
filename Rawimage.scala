@@ -43,7 +43,9 @@ object RawIntImages {
           frame(y)(x) = v2
         }
       }
-    } // add exception handing later
+    } catch {
+      case e: IOException => println("Failed to read")
+    }
     (frame, maxval, zcnt)
   }
 
@@ -64,6 +66,9 @@ object RawIntImages {
     try {
       val out = new FileOutputStream(fn)
       out.write(buf)
+    } catch {
+      case e: FileNotFoundException => println("Not found:" + fn)
+      case e: IOException => println("Failed to write")
     }
 
     true
@@ -119,6 +124,8 @@ object RawimageAnalyzerMain extends App {
   val st = System.nanoTime()
   for (fno <- fnostart to fnostop) {
     val (fr, maxval, zcnt) = RawIntImages.readframe(in, w, h)
+    val zeroratio = zcnt.toFloat / (w*h).toFloat * 100.0
+    println(f"zero=$zeroratio%.2f")
 
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
