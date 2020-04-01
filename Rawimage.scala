@@ -5,8 +5,30 @@ import java.nio.ByteBuffer
 import Array._
 import scala.collection.mutable.ListBuffer
 
-// assume an image is consist of 32-bit (signed) integer pixels.
-object RawIntImages {
+// A class for manipulating a simple raw image data set that does not
+// include metadata information such as width, height, pixel data
+// type, the number of image, etc. This class provides methods that
+// loads and stores the raw image and methods that analyzes data
+// (maximum value, zero pixel count, etc).
+//
+
+class RawImageDataSet(val width: Int, val height: Int)
+{
+  // image pixel data
+  private var pixels = ofDim[Int](height, width) // index order; y -> x
+  // helper function
+  def setpx(x: Int, y: Int, v: Int) : Unit = pixels(y)(x) = v
+  def getpx(x: Int, y: Int) : Int = pixels(y)(x)
+
+  // statistical info
+  var maxval = 0
+  var zerocnt = 0
+
+  def resetpixels(v: Int = 0) : Unit = {
+    for(y <- 0 until height; x <- 0 until width) setpx(x, y, v)
+    maxval = 0
+    zerocnt = 0
+  }
 
   def BytesToInt(buf: Array[Byte]) : Int = {
     (buf(3)<<24) | (buf(2)<<16) | (buf(1)<<8) | buf(0)
@@ -21,43 +43,69 @@ object RawIntImages {
     tmp
   }
 
-  def readframe(in: FileInputStream, w: Int, h: Int) :
-      (Array[Array[Short]], Short, Int) = {
-    var frame = ofDim[Short](h, w)
-    val step = 4
-    var maxval : Short = 0
-    var zcnt : Int = 0
+  // read an image with 4-byte integer pixels (4 * w * h bytes) and
+  // store it to pixels.  maxval and zerocnt are updated
+  def readImageInt(in: FileInputStream) {
+    resetpixels()
 
+    val step = 4
     try {
-      val buf = new Array[Byte]( (w*h)*step)
+      val buf = new Array[Byte]( (width*height)*step )
 
       in.read(buf)
-      // convert byte buf to image. not efficient
-      for (y <- 0 until h) {
-        for (x <- 0 until w) {
-          var idx = y * w + x
+
+      for (y <- 0 until height) {
+        for (x <- 0 until width) {
+          var idx = y * width + x
           val v = BytesToInt(buf.slice(idx*step, idx*step+4))
-          val v2 : Short = if (v < 0) {0} else {v.toShort}
-          if (v2 == 0) zcnt += 1
+          // NOTE: take only positive values
+          val v2 = if (v < 0) {0} else v
+          if (v2 == 0) zerocnt += 1
           if (v2 > maxval) { maxval = v2 }
-          frame(y)(x) = v2
+          setpx(x, y, v2)
         }
       }
     } catch {
       case e: IOException => println("Failed to read")
     }
-    (frame, maxval, zcnt)
+  }
+
+  // read an image with 1-byte integer pixels (w * h bytes) and
+  // store it to pixels.  maxval and zerocnt are updated
+  def readImageByte(in: FileInputStream) {
+    resetpixels()
+
+    try {
+      val buf = new Array[Byte](width*height)
+      in.read(buf)
+      for (y <- 0 until height) {
+        for (x <- 0 until width) {
+          var idx = y * width + x
+          val v = buf(idx).toInt
+          if (v == 0) zerocnt += 1
+          if (v > maxval) { maxval = v }
+          setpx(x, y, v)
+        }
+      }
+    } catch {
+      case e: IOException => println("Failed to read")
+    }
   }
 
 
-  def writegray(image: Array[Array[Short]], fn: String, w: Int, h: Int) : Boolean = {
-    val step = 2
-    var buf = new Array[Byte]( (w*h) * step )
+  // implement this later when needed
+  // def writeImageInt(fn: String, w: Int, h: Int) : Boolean
 
-    for (y <- 0 until h; x <- 0 until w ) {
-      val sval : Short = if (image(y)(x) < 0) 0 else image(y)(x).toShort
+  // write the current image into a file for a debug purpose
+  def writeImageShort(fn: String) : Boolean = {
+    val step = 2
+    var buf = new Array[Byte]((width*height) * step)
+
+    for (y <- 0 until height; x <- 0 until width ) {
+      val v = getpx(x, y)
+      val sval : Short = if (v < 0) 0 else v.toShort
       val tmp = ShortToBytes(sval)
-      val idx = y*w + x
+      val idx = y*width + x
 
       buf(idx*2 + 0) = tmp(0)
       buf(idx*2 + 1) = tmp(1)
@@ -66,6 +114,8 @@ object RawIntImages {
     try {
       val out = new FileOutputStream(fn)
       out.write(buf)
+      out.close()
+      println("Stored to " + fn)
     } catch {
       case e: FileNotFoundException => println("Not found:" + fn)
       case e: IOException => println("Failed to write")
@@ -73,18 +123,18 @@ object RawIntImages {
 
     true
   }
-
-  // software-based encoding for validation
-  def encoding(px: List[Short]) : List[Short] = {
-    val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
-    val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
-    val nonzero = px.filter(x => x > 0)
-    return List.tabulate(nonzero.length+1)(i => if(i==0) header.toShort else nonzero(i-1).toShort )
-  }
 }
 
 
 object RawimageAnalyzerMain extends App {
+
+  // software-based encoding for validation
+  def encoding(px: List[Int]) : List[Int] = {
+    val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
+    val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
+    val nonzero = px.filter(x => x > 0)
+    return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1) )
+  }
 
   def printmemoryusage : Unit = {
     val r = Runtime.getRuntime
@@ -92,15 +142,6 @@ object RawimageAnalyzerMain extends App {
     println( "Total(MB): " + (r.totalMemory >> 20) )
   }
 
-  var fn = ""
-  var h = 0
-  var w = 0
-  var fnostart = 0
-  var fnostop = 0
-  var dumpflag = false
-  // x y steps
-  val xd = 8
-  val yd = 8
 
   if (args.length < 6) {
     println("Usage: RawimageAnalyzerMain rawimgfilename width height fnostart fnostop dump")
@@ -109,36 +150,61 @@ object RawimageAnalyzerMain extends App {
     System.exit(1)
   }
 
-  fn = args(0)
-  h = args(1).toInt
-  w = args(2).toInt
-  fnostart = args(3).toInt
-  fnostop = args(4).toInt
-  dumpflag = args(5).toBoolean
+  val fn = args(0)
+  val w = args(1).toInt
+  val h = args(2).toInt
+  val sz = args(3).toInt // 4 is 4-byte int, 1 is 1-byte int
+  val fnostart = args(4).toInt
+  val fnostop = args(5).toInt
+  val dumpflag = args(6).toBoolean
+  // x y steps
+  val xd = 8
+  val yd = 8
 
   var allratios = new ListBuffer[Float]()
 
-
+  // open a dataset
   val in = new FileInputStream(fn)
+
+  val rawimg = new RawImageDataSet(w, h)
+
+  println("[Info]")
+  println("width:  " + rawimg.width)
+  println("height: " + rawimg.height)
+  println("size:   " + sz)
+  println("")
+
+  if (! Seq(1,4).contains(sz)) {
+    println("Error: invalid size: " + sz)
+    System.exit(1)
+  }
 
   val st = System.nanoTime()
   for (fno <- fnostart to fnostop) {
-    val (fr, maxval, zcnt) = RawIntImages.readframe(in, w, h)
-    val zeroratio = zcnt.toFloat / (w*h).toFloat * 100.0
+    if (sz == 4) rawimg.readImageInt(in)
+    else if (sz == 1) rawimg.readImageByte(in)
+
+    val zeroratio = rawimg.zerocnt.toFloat / (w*h).toFloat * 100.0
     println(f"zero=$zeroratio%.2f")
 
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
-    if (dumpflag)   RawIntImages.writegray(fr, f"fr$fno.gray", w, h)
+    if (dumpflag)   rawimg.writeImageShort(f"fr$fno.gray")
 
     var ratios = new ListBuffer[Float]()
 
-    for (yoff <- 0 until h-yd by yd) {
-      for (xoff <- 0 until w-xd  by xd) {
+    val hyd = h - (h % yd)
+    val wxd = w - (w % xd)
+
+    // chunk up to blocks whose width is xd and height is yd
+    for (yoff <- 0 until hyd by yd) {
+      for (xoff <- 0 until wxd by xd) {
 
         for (x <- 0 until xd) {
-          val dtmp = List.tabulate(yd)(rno => fr(rno + yoff)(x + xoff))
-          val enctmp = RawIntImages.encoding(dtmp)
+          val dtmp = List.tabulate(yd)(
+            rno =>
+            rawimg.getpx(x + xoff, rno + yoff) )
+          val enctmp = encoding(dtmp)
 
           val cr =  (xd.toFloat / enctmp.length)
           ratios += cr
