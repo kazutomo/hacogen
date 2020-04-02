@@ -190,6 +190,9 @@ object EstimatorMain extends App {
     else if (sz == 1) rawimg.readImageByte(in)
 
     val zeroratio = rawimg.zerocnt.toFloat / (w*h).toFloat
+    val maxval = rawimg.maxval
+
+    println(f"$fno%04d: zeroratio=$zeroratio%.3f maxval=$maxval")
 
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
@@ -230,7 +233,7 @@ object EstimatorMain extends App {
           } else {
             tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
             npxs_used = l
-            input_cnt = 0
+            input_cnt = yd
           }
         }
         tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
