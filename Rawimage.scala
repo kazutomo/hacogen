@@ -157,21 +157,24 @@ object RawimageAnalyzerMain extends App {
   val fnostart = args(4).toInt
   val fnostop = args(5).toInt
   val dumpflag = args(6).toBoolean
-  // x y steps
-  val xd = 8
-  val yd = 8
 
-  var allratios = new ListBuffer[Float]()
+  val yd = 8  // the size input to the encoder
+
+
+  var allratios0  = new ListBuffer[Float]()
+  var allratios16 = new ListBuffer[Float]()
+  var allratios18 = new ListBuffer[Float]()
+  var allratios28 = new ListBuffer[Float]()
 
   // open a dataset
   val in = new FileInputStream(fn)
-
   val rawimg = new RawImageDataSet(w, h)
 
   println("[Info]")
-  println("width:  " + rawimg.width)
-  println("height: " + rawimg.height)
-  println("size:   " + sz)
+  println("dataset: " + fn)
+  println("width:   " + rawimg.width)
+  println("height:  " + rawimg.height)
+  println("size:    " + sz)
   println("")
 
   if (! Seq(1,4).contains(sz)) {
@@ -179,61 +182,95 @@ object RawimageAnalyzerMain extends App {
     System.exit(1)
   }
 
+  val nshifts = (h/yd) * w
+
   val st = System.nanoTime()
   for (fno <- fnostart to fnostop) {
     if (sz == 4) rawimg.readImageInt(in)
     else if (sz == 1) rawimg.readImageByte(in)
 
-    val zeroratio = rawimg.zerocnt.toFloat / (w*h).toFloat * 100.0
-    println(f"zero=$zeroratio%.2f")
+    val zeroratio = rawimg.zerocnt.toFloat / (w*h).toFloat
 
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
     if (dumpflag)   rawimg.writeImageShort(f"fr$fno.gray")
 
-    var ratios = new ListBuffer[Float]()
+    var enclens = new ListBuffer[Int]()
 
-    val hyd = h - (h % yd)
-    val wxd = w - (w % xd)
+    val hyd = h - (h % yd) // to simplify, ignore the remaining
 
-    // chunk up to blocks whose width is xd and height is yd
+    // chunk up to rows whose height is yd
     for (yoff <- 0 until hyd by yd) {
-      for (xoff <- 0 until wxd by xd) {
+      // emulate pixel shift
+      for (xoff <- 0 until w) {
+        // create a column chunk, which is an input to the compressor
+        val dtmp = List.tabulate(yd)(
+          rno =>
+          rawimg.getpx(xoff, rno + yoff))
 
-        for (x <- 0 until xd) {
-          val dtmp = List.tabulate(yd)(
-            rno =>
-            rawimg.getpx(x + xoff, rno + yoff) )
-          val enctmp = encoding(dtmp)
-
-          val cr =  (xd.toFloat / enctmp.length)
-          ratios += cr
-          /*
-          if ( dtmp.map(_.toInt).reduce( (a,b) => (a + b)) >= maxval ) {
-            println(f"($xoff,$yoff) cr=$cr%.1f :" + " " + dtmp.mkString(",") + " >> " + enctmp.mkString(",") )
-          }
-           */
-        }
+        val enctmp = encoding(dtmp)
+        enclens += enctmp.length
       }
     }
 
-    if (ratios.length > 0) {
-      val rtmp = ratios.toList
+    def estimate_ratios(noutpixs: Int) : Float = {
+      var tmp_ratios = new ListBuffer[Float]()
+      var npxs_used = 0
+      var input_cnt = 0
+
+      if (noutpixs == 0) {
+        for (l <- enclens) {
+          tmp_ratios += (yd.toFloat / l.toFloat)
+        }
+      } else {
+        for (l <- enclens) {
+          if (npxs_used + l < noutpixs) {
+            npxs_used += l
+            input_cnt += yd
+          } else {
+            tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
+            npxs_used = l
+            input_cnt = 0
+          }
+        }
+        tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
+      }
+
+      val rtmp = tmp_ratios.toList
+      if (rtmp.length < 1) return 0.0.toFloat
+
       val rmean = (rtmp.reduce( (a,b) => (a + b) )) / rtmp.length.toFloat
-      val rmin = rtmp.reduce( (a,b) => (a min b) )
       val rmax = rtmp.reduce( (a,b) => (a max b) )
+      val rmin = rtmp.reduce( (a,b) => (a min b) )
+      var noncompressedcnt = 0
+      rtmp.foreach( e => if(e<1.0) noncompressedcnt += 1)
+      val ncperc = noncompressedcnt.toFloat * 100.0 / (w*h).toFloat
 
-      allratios += rmean
+      println(f"$fno%04d: nout=$noutpixs zr=$zeroratio%.2f mean=$rmean%.2f max=$rmax%.2f min=$rmin%.2f non=$noncompressedcnt/$nshifts")
 
-      //println(f"fno=$fno%4d mean=$rmean%.2f min=$rmin%.2f rmax=$rmax%.2f")
-      //println(f"$rmean%.3f") // just compression ratio
+      rmean
     }
+
+    allratios0  += estimate_ratios(0) // ideal case
+    allratios16 += estimate_ratios(16)
+    allratios18 += estimate_ratios(18)
+    allratios28 += estimate_ratios(28)
   }
+
   val et = System.nanoTime()
   val psec = (et-st)*1e-9
 
-  val allmean = allratios.reduce((a,b) => (a+b)) / allratios.length.toFloat
-  println(f"Compression Ratio Mean = $allmean%.3f")
+  val allmean0 = allratios0.reduce((a,b) => (a+b)) / allratios0.length.toFloat
+  val allmean16 = allratios16.reduce((a,b) => (a+b)) / allratios16.length.toFloat
+  val allmean18 = allratios18.reduce((a,b) => (a+b)) / allratios18.length.toFloat
+  val allmean28 = allratios28.reduce((a,b) => (a+b)) / allratios28.length.toFloat
 
-  println(f"Processing Time[Sec] = $psec%.3f")
+  println("")
+  println(f"Average Compression Ratio        => $allmean0%.3f")
+  println(f"Average Compression Ratio (n=16) => $allmean16%.3f")
+  println(f"Average Compression Ratio (n=18) => $allmean18%.3f")
+  println(f"Average Compression Ratio (n=28) => $allmean28%.3f")
+  println("")
+
+  //println(f"Processing Time[Sec] = $psec%.3f")
 }
