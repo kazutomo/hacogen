@@ -38,8 +38,8 @@ l list:
 h help:
 	sbt "test:runMain hacogen.TestMain --help"
 
-RawimageAnalyzerMain.class: Rawimage.scala
-	scalac Rawimage.scala
+EstimatorMain.class: Estimator.scala
+	scalac Estimator.scala
 
 clean:
 	rm -rf project target test_run_dir generated *.class

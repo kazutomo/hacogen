@@ -126,7 +126,7 @@ class RawImageDataSet(val width: Int, val height: Int)
 }
 
 
-object RawimageAnalyzerMain extends App {
+object EstimatorMain extends App {
 
   // software-based encoding for validation
   def encoding(px: List[Int]) : List[Int] = {
@@ -246,7 +246,7 @@ object RawimageAnalyzerMain extends App {
       rtmp.foreach( e => if(e<1.0) noncompressedcnt += 1)
       val ncperc = noncompressedcnt.toFloat * 100.0 / (w*h).toFloat
 
-      println(f"$fno%04d: nout=$noutpixs zr=$zeroratio%.2f mean=$rmean%.2f max=$rmax%.2f min=$rmin%.2f non=$noncompressedcnt/$nshifts")
+      println(f"$fno%04d: mean=$rmean%.2f max=$rmax%.2f min=$rmin%.2f non=$noncompressedcnt/$nshifts ($noutpixs%2d I/O pixels)")
 
       rmean
     }
@@ -266,10 +266,12 @@ object RawimageAnalyzerMain extends App {
   val allmean28 = allratios28.reduce((a,b) => (a+b)) / allratios28.length.toFloat
 
   println("")
-  println(f"Average Compression Ratio        => $allmean0%.3f")
-  println(f"Average Compression Ratio (n=16) => $allmean16%.3f")
-  println(f"Average Compression Ratio (n=18) => $allmean18%.3f")
-  println(f"Average Compression Ratio (n=28) => $allmean28%.3f")
+  println("")
+  println("[Average Compression Ratio]")
+  println(f"Ideal         => $allmean0%.3f")
+  println(f"28 I/O pixels => $allmean28%.3f")
+  println(f"18 I/O pixels => $allmean18%.3f")
+  println(f"16 I/O pixels => $allmean16%.3f")
   println("")
 
   //println(f"Processing Time[Sec] = $psec%.3f")
