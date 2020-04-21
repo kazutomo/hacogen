@@ -142,6 +142,11 @@ object EstimatorMain extends App {
     println( "Total(MB): " + (r.totalMemory >> 20) )
   }
 
+  def stddev(x: List[Float]) : Float = {
+    val m = x.sum / x.size
+    val sq = x map(v => (v-m)*(v-m))
+    math.sqrt( (sq.sum / x.size).toDouble ).toFloat
+  }
 
   if (args.length < 6) {
     println("Usage: RawimageAnalyzerMain rawimgfilename width height fnostart fnostop dump")
@@ -160,11 +165,12 @@ object EstimatorMain extends App {
 
   val yd = 8  // the size input to the encoder
 
-
-  var allratios0  = new ListBuffer[Float]()
-  var allratios16 = new ListBuffer[Float]()
-  var allratios18 = new ListBuffer[Float]()
+  //var allratios0  = new ListBuffer[Float]()
+  //var allratios16 = new ListBuffer[Float]()
+  //var allratios18 = new ListBuffer[Float]()
   var allratios28 = new ListBuffer[Float]()
+  var allratios56 = new ListBuffer[Float]()
+  var allzeroratios = new ListBuffer[Float]()
 
   // open a dataset
   val in = new FileInputStream(fn)
@@ -190,8 +196,9 @@ object EstimatorMain extends App {
     else if (sz == 1) rawimg.readImageByte(in)
 
     val zeroratio = rawimg.zerocnt.toFloat / (w*h).toFloat
-    val maxval = rawimg.maxval
+    allzeroratios += zeroratio
 
+    val maxval = rawimg.maxval
     println(f"$fno%04d: zeroratio=$zeroratio%.3f maxval=$maxval")
 
     // write back to file.
@@ -254,28 +261,32 @@ object EstimatorMain extends App {
       rmean
     }
 
-    allratios0  += estimate_ratios(0) // ideal case
-    allratios16 += estimate_ratios(16)
-    allratios18 += estimate_ratios(18)
+    //allratios0  += estimate_ratios(0) // ideal case
+    //allratios16 += estimate_ratios(16)
+    //allratios18 += estimate_ratios(18)
     allratios28 += estimate_ratios(28)
+    allratios56 += estimate_ratios(56)
   }
 
   val et = System.nanoTime()
   val psec = (et-st)*1e-9
 
-  val allmean0 = allratios0.reduce((a,b) => (a+b)) / allratios0.length.toFloat
-  val allmean16 = allratios16.reduce((a,b) => (a+b)) / allratios16.length.toFloat
-  val allmean18 = allratios18.reduce((a,b) => (a+b)) / allratios18.length.toFloat
-  val allmean28 = allratios28.reduce((a,b) => (a+b)) / allratios28.length.toFloat
 
-  println("")
-  println("")
-  println("[Average Compression Ratio]")
-  println(f"Ideal         => $allmean0%.3f")
-  println(f"28 I/O pixels => $allmean28%.3f")
-  println(f"18 I/O pixels => $allmean18%.3f")
-  println(f"16 I/O pixels => $allmean16%.3f")
-  println("")
+  def printstats(label: String, l: List[Float]) {
+    val mean = l.sum / l.size
+    val std  = stddev(l)
+    val maxv = l.reduce((a,b) => (a max b))
+    val minv = l.reduce((a,b) => (a min b))
 
-  //println(f"Processing Time[Sec] = $psec%.3f")
+    println(f"$label%-10s :  mean=$mean%.3f std=$std%.3f min=$minv%.3f max=$maxv%.3f")
+  }
+  println()
+  println("-" * 60)
+  printstats("zeroratio", allzeroratios.toList)
+  printstats("cr28",      allratios28.toList)
+  printstats("cr56",      allratios56.toList)
+  println("-" * 60)
+  println()
+
+  println(f"Processing Time[Sec] = $psec%.3f")
 }
