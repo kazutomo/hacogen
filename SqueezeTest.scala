@@ -6,9 +6,16 @@
 package hacogen
 
 import chisel3._
-import chisel3.iotesters.PeekPokeTester
+import chisel3.util._
+import chisel3.iotesters._
 
 class SqueezeUnitTester(c: Squeeze) extends PeekPokeTester(c) {
+
+  def squeezed(l : List[Int]) : List[Int] = {
+    var ret = List[Int]()
+    for (e <- l if e != 0) ret = List(e) ::: ret
+    ret.reverse ::: List.tabulate(c.nelems - ret.length)(dummy => 0)
+  }
 
   val testpats = List(
     List(0, 0, 0, 0, 0, 0, 0, 1),
@@ -30,12 +37,15 @@ class SqueezeUnitTester(c: Squeeze) extends PeekPokeTester(c) {
     }
     print(s"     out: ");
 
-    for (i <- 0 to 7) {
+    val r = squeezed(l)
+    for (i <- 0 until c.nelems) {
       val out = peek(c.io.out(i))
       print(s"$out  ")
+      expect(c.io.out(i), r(i))
     }
     val ndata = peek(c.io.ndata)
     print(s"n=$ndata\n")
+
     step(1) // step(1) due to flush print msgs
   }
 }
