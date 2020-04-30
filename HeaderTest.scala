@@ -12,9 +12,11 @@ class HeaderUnitTester(c: Header) extends PeekPokeTester(c) {
 
   var r = new scala.util.Random(123)
 
-  val nelem = 8
+  val nelem = c.nelems
 
-  for (i <- 0 to 10) {
+  val ntests = 10
+
+  for (i <- 0 until ntests) {
     println("i="+i)
 
     val tmp = r.nextInt(1<<nelem)

@@ -163,7 +163,7 @@ object EstimatorMain extends App {
   val fnostop = args(5).toInt
   val dumpflag = args(6).toBoolean
 
-  val yd = 8  // the size input to the encoder
+  val yd = 16  // the size input to the encoder
 
   //var allratios0  = new ListBuffer[Float]()
   //var allratios16 = new ListBuffer[Float]()
@@ -205,6 +205,7 @@ object EstimatorMain extends App {
     // To display an image, display -size $Wx$H -depth 16  imagefile
     if (dumpflag)   rawimg.writeImageShort(f"fr$fno.gray")
 
+    // enclens is created for each frames
     var enclens = new ListBuffer[Int]()
 
     val hyd = h - (h % yd) // to simplify, ignore the remaining

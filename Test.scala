@@ -11,6 +11,10 @@ import chisel3.iotesters.{Driver, PeekPokeTester}
 object TestMain extends App {
   val nelems_src = 8
   val nelems_dst = 16
+  val elemsize = 16
+  // val nelems_src = 16
+  // val nelems_dst = 28
+  // val elemsize = 9
 
   // component target list.
   val targetlist = List(
@@ -41,41 +45,41 @@ object TestMain extends App {
     case "header" =>
       mode match {
         case "verilog" =>
-          chisel3.Driver.execute(args, () => new Header(nelems_src, nelems_dst) )
+          chisel3.Driver.execute(args, () => new Header(nelems_src, elemsize) )
         case _ =>
-          iotesters.Driver.execute(args, () => new Header(nelems_src, nelems_dst) )  { c => new HeaderUnitTester(c) }
+          iotesters.Driver.execute(args, () => new Header(nelems_src, elemsize) )  { c => new HeaderUnitTester(c) }
       }
 
     case "selector" =>
       mode match {
         case "verilog" =>
-          chisel3.Driver.execute(args, () => new Selector(nelems_src, nelems_dst) )
+          chisel3.Driver.execute(args, () => new Selector(nelems_src, nelems_dst, elemsize) )
         case _ =>
-          iotesters.Driver.execute(args, () => new Selector(nelems_src, nelems_dst) )  { c => new SelectorUnitTester(c) }
+          iotesters.Driver.execute(args, () => new Selector(nelems_src, nelems_dst, elemsize) )  { c => new SelectorUnitTester(c) }
       }
 
     case "stbuf" =>
       mode match {
         case "verilog" =>
-          chisel3.Driver.execute(args, () => new STBuf(nelems_src, nelems_dst) )
+          chisel3.Driver.execute(args, () => new STBuf(nelems_src, nelems_dst, elemsize) )
         case _ =>
-          iotesters.Driver.execute(args, () => new STBuf(nelems_src, nelems_dst) )  { c => new STBufUnitTester(c) }
+          iotesters.Driver.execute(args, () => new STBuf(nelems_src, nelems_dst, elemsize) )  { c => new STBufUnitTester(c) }
       }
 
     case "squeeze" =>
       mode match {
         case "verilog" =>
-          chisel3.Driver.execute(args, () => new Squeeze(nelems_src, nelems_dst) )
+          chisel3.Driver.execute(args, () => new Squeeze(nelems_src, elemsize) )
         case _ =>
-          iotesters.Driver.execute(args, () => new Squeeze(nelems_src, nelems_dst) )  { c => new SqueezeUnitTester(c) }
+          iotesters.Driver.execute(args, () => new Squeeze(nelems_src, elemsize) )  { c => new SqueezeUnitTester(c) }
       }
 
     case _ =>
       mode match {
         case "verilog" =>
-          chisel3.Driver.execute(args, () => new Comp(nelems_src, nelems_dst) )
+          chisel3.Driver.execute(args, () => new Comp(nelems_src, nelems_dst, elemsize) )
         case _ =>
-          iotesters.Driver.execute(args, () => new Comp(nelems_src, nelems_dst) )  { c => new CompUnitTester(c) }
+          iotesters.Driver.execute(args, () => new Comp(nelems_src, nelems_dst, elemsize) )  { c => new CompUnitTester(c) }
       }
   }
 }
