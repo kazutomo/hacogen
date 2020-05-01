@@ -8,26 +8,69 @@ package hacogen
 import chisel3._
 import chisel3.iotesters.PeekPokeTester
 
+class SelectorSW(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 16) {
+  private var dpos : Int = 0
+  private var qpos : Int = 0
+
+  // return (pos, flushed, flushedlen)
+  def input(n: Int) : (Int, Int, Int) = {
+    var flushedlen : Int = 0
+    var tmppos : Int = 0
+    var retpos : Int = 0
+    val flushed = if ((qpos+n) > nelems_dst) 1 else 0
+
+    if (flushed == 1) {
+      tmppos = n
+      flushedlen = qpos
+      retpos = 0
+    } else {
+      tmppos = qpos + n
+      flushedlen = 0
+      retpos = qpos
+    }
+
+    dpos = tmppos
+
+    (retpos, flushed, flushedlen)
+  }
+
+  def step() { qpos = dpos }
+}
+
 class SelectorUnitTester(c: Selector) extends PeekPokeTester(c) {
 
-  val r = new scala.util.Random(100)
+  // A software implementation of Selector
+  var swsel = new SelectorSW(c.nelems_src, c.nelems_dst, c.elemsize)
 
-  //  val nn = List(4,4,4,4,4)
-  val ndata = 32
+  val seed = 100
+  val r = new scala.util.Random(seed)
+
+  // nelems_src is the number of input pixels
+  // elemsize is the number of bits per pixel
+  val headerlen = (c.nelems_src/c.elemsize).toInt + 1
+
+  val ntests = 20
   val maxval = 4
-  val nn = List.tabulate(ndata)(x => r.nextInt(maxval) + 1)
+  val nn = List.tabulate(ntests)(x => r.nextInt(maxval) + headerlen)
 
   for(nsrc <- nn) {
+
+    // input to both hardware and software implementation
     poke(c.io.nsrc, nsrc)
-    val bufsel = peek(c.io.bufcursel)
+    val (swpos, swflushed, swflushedlen) = swsel.input(nsrc)
+    // println(f"sw: pos=$swpos flushed=$swflushed flushedlen=$swflushedlen")
+    // val bufsel = peek(c.io.bufcursel) // bufsel is unused
     val bufpos = peek(c.io.bufcurpos)
     val flushed   = peek(c.io.flushed)
     val flushedbuflen  = peek(c.io.flushedbuflen)
-    if (flushed > 0 )
-      print(s"nsrc=$nsrc => sel=$bufsel pos=$bufpos fblen=$flushedbuflen\n")
-    else
-      print(s"nsrc=$nsrc => sel=$bufsel pos=$bufpos\n")
+
+    print(s"nsrc=$nsrc => pos=$bufpos flushed=$flushed fblen=$flushedbuflen\n")
+
+    expect(c.io.bufcurpos, swpos)
+    expect(c.io.flushed, swflushed)
+    expect(c.io.flushedbuflen, swflushedlen)
 
     step(1)
+    swsel.step()
   }
 }
