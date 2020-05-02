@@ -7,48 +7,120 @@ package hacogen
 
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
+import scala.collection.mutable.ListBuffer
+
+class STBufSW(val nelems_src:Int = 8, val nelems_dst:Int = 16,
+  val elemsize:Int = 16)
+{
+  private var dbuf = new Array[Int](nelems_dst)
+  private var qbuf = new Array[Int](nelems_dst)
+
+  for(i <- 0 until nelems_dst)  qbuf(i) = 0x55
+
+  def insert(src: Array[Int], pos: Int, len : Int, flushed : Int) {
+    for(i <- 0 until len) dbuf(pos+i) = src(i)
+
+    for(i <- pos+len until nelems_dst)  dbuf(i) = 0x55
+  }
+
+  def getqbuf() : Array[Int] = qbuf
+
+  def step() {
+    qbuf = dbuf map(identity)
+  }
+
+  def printbuf() {
+    if (true) {
+      print("D  : ")
+      dbuf.foreach(e => print(f"$e%d "))
+      println()
+    }
+    print("Q  : ")
+    qbuf.foreach(e => print(f"$e%d "))
+    println()
+  }
+}
+
 
 class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
 
-  def printdst(c: STBuf) {
+  var swstb = new STBufSW(c.nelems_src, c.nelems_dst, c.elemsize)
+
+  // 99 here is a guard. should not be in the output
+  // Note: tests array generation needs to be implemented for different input sizes
+  // input data type
+  class inT(val pos:Int, val len:Int, val flushed:Int, val data: List[Int])
+
+  var testinputs = List(
+    (new inT(0, 0, 0, List(99, 0, 0, 0, 0, 0, 0, 0))),
+    (new inT(0, 1, 0, List(1, 99, 0, 0, 0, 0, 0, 0))),
+    (new inT(1, 2, 0, List(2, 3, 99, 0, 0, 0, 0, 0))),
+    (new inT(3, 3, 0, List(4, 5, 6, 99, 0, 0, 0, 0))),
+    (new inT(0, 3, 1, List(7, 8, 9, 99, 0, 0, 0, 0))),
+    (new inT(0, 1, 0, List(1, 99, 0, 0, 0, 0, 0, 0))),
+    (new inT(1, 3, 0, List(2, 3, 4, 99, 0, 0, 0, 0)))
+  )
+
+  val rndtestgen = false
+
+  if (rndtestgen) {
+    var swsel = new SelectorSW(c.nelems_src, c.nelems_dst, c.elemsize)
+
+    val seed = 100
+    val r = new scala.util.Random(seed)
+
+    // nelems_src is the number of input pixels
+    // elemsize is the number of bits per pixel
+    val headerlen = (c.nelems_src/c.elemsize).toInt + 1
+
+    val ntests = 5 // the number of tests
+    val maxval = 7 // maximum data length
+    val nn = List.tabulate(ntests)(x => r.nextInt(maxval) + headerlen)
+
+    var tmptestinputs = ListBuffer[inT]()
+
+    for(nsrc <- nn) {
+      val (swpos, swflushed, swflushedlen) = swsel.input(nsrc)
+    }
+  }
+
+  def checkoutput() {
     var idx = 0
-    for (i <- 0 to 7)  {
+    val swqbuf = swstb.getqbuf()
+    print("OUT: ")
+    for (i <- 0 until c.nelems_dst)  {
+      // expect(c.io.dst(idx), swqbuf(i)) //
       val v = peek(c.io.dst(idx))
       print(v + " ")
       idx += 1
     }
     println()
+    swstb.printbuf()
   }
 
-  // _1: insert position
-  // _2: the number of elements
-  // _3: flushed
-  // 99 here is a guard. should not be in the output
-  val tests = Array(
-    (0, 0, 0, List(99, 0, 0, 0, 0, 0, 0, 0)),
-    (0, 1, 0, List(1, 99, 0, 0, 0, 0, 0, 0)),
-    (1, 2, 0, List(2, 3, 99, 0, 0, 0, 0, 0)),
-    (3, 3, 0, List(4, 5, 6, 99, 0, 0, 0, 0)),
-    (0, 3, 1, List(7, 8, 9, 99, 0, 0, 0, 0)),
-    (0, 0, 0, List(0, 0, 0, 0,  0, 0, 0, 0))
-  )
+  var flushedlen = 0
 
-  for (t <- tests) {
-    poke(c.io.pos, t._1)
-    poke(c.io.len, t._2)
-    poke(c.io.flushed, t._3)
-    println(f"pos=${t._1} len=${t._2} flushed=${t._3}")
-    println("IN:")
+  for (t <- testinputs) {
+    // input to both hardware and software implementation
+
+    poke(c.io.pos, t.pos)
+    poke(c.io.len, t.len)
+    poke(c.io.flushed, t.flushed)
+    println(f"pos=${t.pos} len=${t.len} flushed=${t.flushed}")
+    print("IN : ")
     var idx = 0
-    for (e <- t._4) {
+    for (e <- t.data) {
       print(e + " ")
       poke(c.io.src(idx), e)
       idx += 1
     }
-    println("OUT:")
-    printdst(c)
+    println()
+    swstb.insert(t.data.toArray, t.pos, t.len, t.flushed)
+
+    checkoutput()
+
     step(1)
+    swstb.step()
   }
-  println("OUT:")
-  printdst(c)
+  checkoutput()
 }
