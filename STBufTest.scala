@@ -61,8 +61,7 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
     (new inT(1, 3, 0, List(2, 3, 4, 99, 0, 0, 0, 0)))
   )
 
-  val rndtestgen = false
-
+  val rndtestgen = true
   if (rndtestgen) {
     var swsel = new SelectorSW(c.nelems_src, c.nelems_dst, c.elemsize)
 
@@ -81,7 +80,11 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
 
     for(nsrc <- nn) {
       val (swpos, swflushed, swflushedlen) = swsel.input(nsrc)
+      val tmpdata = List.tabulate(nsrc)(x => r.nextInt(10)+1)
+      tmptestinputs += (new inT(swpos, nsrc, swflushed, tmpdata))
+      swsel.step()
     }
+    testinputs = tmptestinputs.toList
   }
 
   def checkoutput() {
