@@ -51,17 +51,11 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
   // input data type
   class inT(val pos:Int, val len:Int, val flushed:Int, val data: List[Int])
 
-  var testinputs = List(
-    (new inT(0, 0, 0, List(99, 0, 0, 0, 0, 0, 0, 0))),
-    (new inT(0, 1, 0, List(1, 99, 0, 0, 0, 0, 0, 0))),
-    (new inT(1, 2, 0, List(2, 3, 99, 0, 0, 0, 0, 0))),
-    (new inT(3, 3, 0, List(4, 5, 6, 99, 0, 0, 0, 0))),
-    (new inT(0, 3, 1, List(7, 8, 9, 99, 0, 0, 0, 0))),
-    (new inT(0, 1, 0, List(1, 99, 0, 0, 0, 0, 0, 0))),
-    (new inT(1, 3, 0, List(2, 3, 4, 99, 0, 0, 0, 0)))
-  )
-
   val rndtestgen = true
+
+  var testinputs = List[inT]()
+
+
   if (rndtestgen) {
     var swsel = new SelectorSW(c.nelems_src, c.nelems_dst, c.elemsize)
 
@@ -84,15 +78,27 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
       tmptestinputs += (new inT(swpos, nsrc, swflushed, tmpdata))
       swsel.step()
     }
+    tmptestinputs += (new inT(0, 0, 1, List(99)))
     testinputs = tmptestinputs.toList
+  } else {
+    /* for manual test inputs */
+    testinputs = List(
+    (new inT(0, 0, 0, List(99, 0, 0, 0, 0, 0, 0, 0))),
+    (new inT(0, 1, 0, List(1, 99, 0, 0, 0, 0, 0, 0))),
+    (new inT(1, 2, 0, List(2, 3, 99, 0, 0, 0, 0, 0))),
+    (new inT(3, 3, 0, List(4, 5, 6, 99, 0, 0, 0, 0))),
+    (new inT(0, 3, 1, List(7, 8, 9, 99, 0, 0, 0, 0))),
+    (new inT(0, 1, 0, List(1, 99, 0, 0, 0, 0, 0, 0))),
+    (new inT(1, 3, 0, List(2, 3, 4, 99, 0, 0, 0, 0))) )
   }
 
-  def checkoutput() {
+  def checkoutput(flushed: Int) {
     var idx = 0
     val swqbuf = swstb.getqbuf()
     print("OUT: ")
     for (i <- 0 until c.nelems_dst)  {
-      // expect(c.io.dst(idx), swqbuf(i)) //
+      if (flushed == 1)
+        expect(c.io.dst(idx), swqbuf(i))
       val v = peek(c.io.dst(idx))
       print(v + " ")
       idx += 1
@@ -120,10 +126,9 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
     println()
     swstb.insert(t.data.toArray, t.pos, t.len, t.flushed)
 
-    checkoutput()
+    checkoutput(t.flushed)
 
     step(1)
     swstb.step()
   }
-  checkoutput()
 }
