@@ -28,11 +28,11 @@ class HeaderUnitTester(c: Header) extends PeekPokeTester(c) {
       idx += 1
     }
 
-    expect(c.io.out, tmp)
+    expect(c.io.out(0), tmp)
 
     def binstr(v : Int) : String = String.format("%8s", Integer.toBinaryString(v)).replace(' ', '0')
 
-    val res = peek(c.io.out).toInt
+    val res = peek(c.io.out(0)).toInt
     println("IN: " + binstr(tmp))
     println("OUT:" + binstr(res))
 

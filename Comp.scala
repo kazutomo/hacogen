@@ -36,7 +36,7 @@ class Comp(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 1
   // data includes header plus compressed data
   val data = Wire(Vec(nelems_src+1, UInt(elemsize.W)))
 
-  data(0) := hdr.io.out
+  data(0) := hdr.io.out(0) // XXX: fix this to support multiple headers
   for (i <- 1 to nelems_src) {
     data(i) := sqz.io.out(i-1)
   }

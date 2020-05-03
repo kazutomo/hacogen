@@ -8,11 +8,15 @@ package hacogen
 import chisel3._
 import chisel3.util.log2Ceil
 
+// elemsize is the number of bits per pixel
+// nelems is the number input pixels
 class Header(val nelems:Int = 8, val elemsize:Int = 16) extends Module {
-    val io = IO(new Bundle {
-      val in  = Input(Vec(nelems, UInt(elemsize.W)))
-      val out = Output(UInt(elemsize.W))
-    })
+  val nheaders = (nelems/elemsize) + 1
+
+  val io = IO(new Bundle {
+    val in  = Input(Vec(nelems, UInt(elemsize.W)))
+    val out = Output(Vec(nheaders, UInt(elemsize.W)))
+  })
 
   val metadata = VecInit.tabulate(nelems)(i => (io.in(i) =/= 0.U).asUInt << i)
 
@@ -21,5 +25,5 @@ class Header(val nelems:Int = 8, val elemsize:Int = 16) extends Module {
     printf("%d: in=%d %d\n", i.U, io.in(i), metadata(i))
   }  */
 
-  io.out := metadata.reduce(_ | _) // + (1.U << (elemsize-1).U)
+  io.out(0) := metadata.reduce(_ | _) // + (1.U << (elemsize-1).U)
 }
