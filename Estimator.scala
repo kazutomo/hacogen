@@ -31,7 +31,7 @@ class RawImageDataSet(val width: Int, val height: Int)
   }
 
   def BytesToInt(buf: Array[Byte]) : Int = {
-    (buf(3)<<24) | (buf(2)<<16) | (buf(1)<<8) | buf(0)
+    (buf(3).toInt<<24) | (buf(2).toInt<<16) | (buf(1).toInt<<8) | buf(0).toInt
   }
 
   def ShortToBytes(v: Short): Array[Byte] = {
@@ -42,6 +42,16 @@ class RawImageDataSet(val width: Int, val height: Int)
 
     tmp
   }
+
+  def skipImageInt(in: FileInputStream) {
+    val step = 4
+    in.skip((width*height)*step)
+  }
+  def skipImageByte(in: FileInputStream) {
+    val step = 1
+    in.skip((width*height)*step)
+  }
+
 
   // read an image with 4-byte integer pixels (4 * w * h bytes) and
   // store it to pixels.  maxval and zerocnt are updated
@@ -59,7 +69,8 @@ class RawImageDataSet(val width: Int, val height: Int)
           var idx = y * width + x
           val v = BytesToInt(buf.slice(idx*step, idx*step+4))
           // NOTE: take only positive values
-          val v2 = if (v < 0) {0} else v
+          val clipval=(1<<16)-1
+          val v2 = if (v < 0) {0} else {if (v>=clipval) clipval else v}
           if (v2 == 0) zerocnt += 1
           if (v2 > maxval) { maxval = v2 }
           setpx(x, y, v2)
@@ -191,6 +202,13 @@ object EstimatorMain extends App {
   val nshifts = (h/yd) * w
 
   val st = System.nanoTime()
+  // need to skip frames
+  for (fno <- 0 until fnostart) {
+    if (sz == 4) rawimg.skipImageInt(in)
+    else if (sz == 1) rawimg.skipImageByte(in)
+    println(s"Skipping $fno")
+  }
+
   for (fno <- fnostart to fnostop) {
     if (sz == 4) rawimg.readImageInt(in)
     else if (sz == 1) rawimg.readImageByte(in)
