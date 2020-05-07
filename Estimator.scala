@@ -31,7 +31,13 @@ class RawImageDataSet(val width: Int, val height: Int)
   }
 
   def BytesToInt(buf: Array[Byte]) : Int = {
-    (buf(3).toInt<<24) | (buf(2).toInt<<16) | (buf(1).toInt<<8) | buf(0).toInt
+    val ret = ByteBuffer.wrap(buf.reverse).getInt
+    /*
+    if(buf(3) != 0 ||buf(2) != 0 ||buf(1) != 0) {
+      println(f"${buf(3)}:${buf(2)}:${buf(1)}:${buf(0)} => $ret")
+    }
+     */
+    ret
   }
 
   def ShortToBytes(v: Short): Array[Byte] = {
@@ -68,9 +74,13 @@ class RawImageDataSet(val width: Int, val height: Int)
         for (x <- 0 until width) {
           var idx = y * width + x
           val v = BytesToInt(buf.slice(idx*step, idx*step+4))
+
+
           // NOTE: take only positive values
           val clipval=(1<<16)-1
-          val v2 = if (v < 0) {0} else {if (v>=clipval) clipval else v}
+          //val v2 = if (v < 0) {0} else {if (v>=clipval) clipval else v}
+          val v2 = v.abs
+
           if (v2 == 0) zerocnt += 1
           if (v2 > maxval) { maxval = v2 }
           setpx(x, y, v2)
@@ -114,7 +124,8 @@ class RawImageDataSet(val width: Int, val height: Int)
 
     for (y <- 0 until height; x <- 0 until width ) {
       val v = getpx(x, y)
-      val sval : Short = if (v < 0) 0 else v.toShort
+      //val sval : Short = if (v < 0) 0 else v.toShort
+      val sval : Short = if (v <= 0) 0 else 1
       val tmp = ShortToBytes(sval)
       val idx = y*width + x
 
@@ -133,6 +144,24 @@ class RawImageDataSet(val width: Int, val height: Int)
     }
 
     true
+  }
+
+  // ad-hoc dump utility
+  def writeVerticalLineSamples(fn: String, x: Int) {
+    try {
+      val f = new File(fn)
+      val out = new BufferedWriter(new FileWriter(f))
+
+      println("Stored samples to " + fn)
+      for (y <- 0 until height) {
+        val v = getpx(x, y)
+        out.write(f"$v\n")
+      }
+      out.close()
+    } catch {
+      case e: FileNotFoundException => println("Not found:" + fn)
+      case e: IOException => println("Failed to write")
+    }
   }
 }
 
@@ -221,7 +250,11 @@ object EstimatorMain extends App {
 
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
-    if (dumpflag)   rawimg.writeImageShort(f"fr$fno.gray")
+    if (dumpflag)   {
+      rawimg.writeImageShort(f"fr$fno.gray")
+      val sampleatx=(w/2)+1
+      rawimg.writeVerticalLineSamples(f"vsample-x$sampleatx-fr$fno.txt", sampleatx)
+    }
 
     // enclens is created for each frames
     var enclens = new ListBuffer[Int]()

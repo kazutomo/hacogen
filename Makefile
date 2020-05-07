@@ -39,8 +39,10 @@ h help:
 	sbt "test:runMain hacogen.TestMain --help"
 
 EstimatorMain.class: Estimator.scala
-	scalac Estimator.scala
+	mkdir -p classes
+	fsc -d classes Estimator.scala
 
 clean:
 	rm -rf project target test_run_dir generated *.class
 	rm -rf *.fir *.anno.json
+	rm -rf classes
