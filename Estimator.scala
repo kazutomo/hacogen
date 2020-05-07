@@ -5,6 +5,105 @@ import java.nio.ByteBuffer
 import Array._
 import scala.collection.mutable.ListBuffer
 
+class AppParams {
+  def usage() {
+    println("Usage: scala EstimatorMain [options] rawimgfilename")
+    println("")
+    println("This command reads a simple raw image format that contains a number of glay scala images with 32-bit integer pixel value (its dynamic range is possible smaller). Width and Height are specified via command line. The image framenumber start and stop are also specified via command line.")
+    println("")
+    println("[Options]")
+    println("")
+    println("-width int  : width of each image frame")
+    println("-height int : height of each image frame")
+    println("-psize int  : bytes per pixel: 1 or 4")
+    println(s"-fnostart int : start frame number (default: $fnostart)")
+    println(s"-fnostop int  : stop frame number (default: $fnostop)")
+    println("-gray: dump gray images.")
+    println("-png: dump png images.")
+    println("-vsample xpos : dump vertical sample at xpos (default width/2)")
+    println("")
+  }
+
+  var filename = ""
+  var width = 256
+  var height = 256
+  var psize = 4
+  var fnostart = 0
+  var fnostop = 0
+  var dump_gray = false
+  var dump_png = false
+  var dump_vsample = false
+  var vsamplexpos = 0
+  // NOTE: assume width and height >= 256. for now, fixed
+  val window_width  = 256
+  val window_height = 256
+  var xoff = 0
+  var yoff = 0
+  // compressor params. non-adjustable for now
+  var npxbits = 9      // 9 bits per pixels
+  val yd = 16  // the size input to the encoder
+
+  type AppOpts = Map[String, String]
+
+  // command line option handling
+  def nextopts(l: List[String], m: AppOpts) : AppOpts = {
+    l match {
+      case Nil => m
+      case "-h" :: tail => usage() ; sys.exit(1)
+      case "-gray" :: istr :: tail => nextopts(tail, m ++ Map("gray" -> istr ))
+      case "-png" :: istr :: tail => nextopts(tail, m ++ Map("png" -> istr ))
+      case "-vsample" :: istr :: tail => nextopts(tail, m ++ Map("vsample" -> istr ))
+      case "-width" :: istr :: tail => nextopts(tail, m ++ Map("width" -> istr ))
+      case "-height" :: istr :: tail => nextopts(tail, m ++ Map("height" -> istr ))
+      case "-psize" :: istr :: tail => nextopts(tail, m ++ Map("psize" -> istr ))
+      case "-fnostart" :: istr :: tail => nextopts(tail, m ++ Map("fnostart" -> istr ))
+      case "-fnostop" :: istr :: tail => nextopts(tail, m ++ Map("fnostop" -> istr ))
+      case str :: Nil => m ++ Map("filename" -> str)
+      case unknown => {
+        println("Unknown: " + unknown)
+        sys.exit(1)
+      }
+    }
+  }
+
+  def getopts(a: Array[String]) {
+    val m = nextopts(a.toList, Map())
+
+    filename = m.get("filename") match {
+      case Some(v) => v
+      case None => println("No filename found"); usage(); sys.exit(1)
+    }
+    def getIntVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toInt ; case None => println("No value found: " + k); sys.exit(1)}
+    def getBoolVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toBoolean ; case None => println("No value found: " + k); sys.exit(1)}
+
+    width = getIntVal(m, "width")
+    height = getIntVal(m, "height")
+    psize = getIntVal(m, "psize")
+    fnostart = getIntVal(m, "fnostart")
+    fnostop = getIntVal(m, "fnostop")
+    dump_gray = getBoolVal(m, "gray")
+
+    m.get("vsample") match {
+      case Some(v) => dump_vsample = true; vsamplexpos = v.toInt
+      case None => 0
+    }
+
+    // FIX: add xoff,yoff later
+    xoff = (width/2)  - (window_width/2)
+    yoff = (height/2) - (window_width/2)
+  }
+
+  def printinfo() = {
+    println("[Info]")
+    println("dataset: " + filename)
+    println("width:   " + width)
+    println("height:  " + height)
+    println("size:    " + psize)
+    println("")
+  }
+}
+
+
 // A class for manipulating a simple raw image data set that does not
 // include metadata information such as width, height, pixel data
 // type, the number of image, etc. This class provides methods that
@@ -75,12 +174,10 @@ class RawImageDataSet(val width: Int, val height: Int)
           var idx = y * width + x
           val v = BytesToInt(buf.slice(idx*step, idx*step+4))
 
-
           // NOTE: take only positive values
           val clipval=(1<<16)-1
-          //val v2 = if (v < 0) {0} else {if (v>=clipval) clipval else v}
-          val v2 = v.abs
-
+          val v2 = if (v < 0) {0} else {if (v>=clipval) clipval else v}
+          // val v2 = v.abs
           if (v2 == 0) zerocnt += 1
           if (v2 > maxval) { maxval = v2 }
           setpx(x, y, v2)
@@ -124,8 +221,8 @@ class RawImageDataSet(val width: Int, val height: Int)
 
     for (y <- 0 until height; x <- 0 until width ) {
       val v = getpx(x, y)
-      //val sval : Short = if (v < 0) 0 else v.toShort
-      val sval : Short = if (v <= 0) 0 else 1
+      val sval : Short = if (v < 0) 0 else v.toShort
+      // val sval : Short = if (v <= 0) 0 else 1
       val tmp = ShortToBytes(sval)
       val idx = y*width + x
 
@@ -152,7 +249,7 @@ class RawImageDataSet(val width: Int, val height: Int)
       val f = new File(fn)
       val out = new BufferedWriter(new FileWriter(f))
 
-      println("Stored samples to " + fn)
+      println(s"Stored samples@$x to $fn")
       for (y <- 0 until height) {
         val v = getpx(x, y)
         out.write(f"$v\n")
@@ -188,126 +285,37 @@ object EstimatorMain extends App {
     math.sqrt( (sq.sum / x.size).toDouble ).toFloat
   }
 
-  class Params {
-    var width = 256
-    var height = 256
-    var fnostart = 0
-    var fnostop = 0
-    var dump_gray = false
-    var dump_png = false
-    var dump_vsample = false
-    var vsamplepos = 0
-    // NOTE: assume width and height >= 256. for now, fixed
-    val window_width  = 256
-    val window_height = 256
-    var xoff = 0
-    var yoff = 0
-    // compressor params. non-adjustable for now
-    var npxbits = 9      // 9 bits per pixels
+  var ap = new AppParams()
 
-    def autoxyoff() = {
-      xoff = (width/2)  - (window_width/2)
-      yoff = (height/2) - (window_width/2)
-    }
-  }
+  ap.getopts(args)
+  ap.printinfo()
 
-  var p = new Params()
+  //
 
-  def usage() {
-    println("Usage: scala EstimatorMain [options] rawimgfilename")
-    println("")
-    println("This command reads a simple raw image format that contains a number of glay scala images with 32-bit integer pixel value (its dynamic range is possible smaller). Width and Height are specified via command line. The image framenumber start and stop are also specified via command line.")
-    println("")
-    println("[Options]")
-    println("")
-    println("-width int  : width of each image frame")
-    println("-height int : height of each image frame")
-    println("-psize int  : bytes per pixel: 1 or 4")
-    println(s"-fnostart int : start frame number (default: $fnostart)")
-    println(s"-fnostop int  : stop frame number (default: $fnostop)")
-    println("-gray: dump gray images.")
-    println("-png: dump png images.")
-    println("-vsample xpos : dump vertical sample at xpos (default width/2)")
-    println("")
-  }
-
-  type AppOpts = Map[String, String]
-
-  // command line option handling
-  def nextopts(l: List[String], m: AppOpts) : AppOpts = {
-    l match {
-      case Nil => m
-      case "-h" :: tail => usage() ; sys.exit(1)
-      case "-gray" :: istr :: tail => nextopts(tail, m ++ Map("gray" -> istr ))
-      case "-png" :: istr :: tail => nextopts(tail, m ++ Map("png" -> istr ))
-      case "-vsample" :: istr :: tail => nextopts(tail, m ++ Map("vsample" -> istr ))
-      case "-width" :: istr :: tail => nextopts(tail, m ++ Map("width" -> istr ))
-      case "-height" :: istr :: tail => nextopts(tail, m ++ Map("height" -> istr ))
-      case "-psize" :: istr :: tail => nextopts(tail, m ++ Map("psize" -> istr ))
-      case "-fnostart" :: istr :: tail => nextopts(tail, m ++ Map("fnostart" -> istr ))
-      case "-fnostop" :: istr :: tail => nextopts(tail, m ++ Map("fnostop" -> istr ))
-      case str :: Nil => m ++ Map("filename" -> str)
-      case unknown => {
-        println("Unknown: " + unknown)
-        sys.exit(1)
-      }
-    }
-  }
-
-  def getIntVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toInt ; case None => println("No value found: " + k); sys.exit(1)}
-  def getStrVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v ; case None => println("No value found: " + k); sys.exit(1)}
-  def getBoolVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toBoolean ; case None => println("No value found: " + k); sys.exit(1)}
-
-  val m = nextopts(args.toList, Map())
-
-  val fn = getStrVal(m, "filename")
-  val w = getIntVal(m, "width")
-  val h = getIntVal(m, "height")
-  val sz = getIntVal(m, "psize")
-  val fnostart = getIntVal(m, "fnostart")
-  val fnostop = getIntVal(m, "fnostop")
-  val dumpflag = getBoolVal(m, "gray")
-
-  val yd = 16  // the size input to the encoder
-
-  //var allratios0  = new ListBuffer[Float]()
-  //var allratios16 = new ListBuffer[Float]()
-  //var allratios18 = new ListBuffer[Float]()
   var allratios28 = new ListBuffer[Float]()
   var allratios56 = new ListBuffer[Float]()
   var allzeroratios = new ListBuffer[Float]()
 
   // open a dataset
-  val in = new FileInputStream(fn)
-  val rawimg = new RawImageDataSet(w, h)
+  val in = new FileInputStream(ap.filename)
+  val rawimg = new RawImageDataSet(ap.width, ap.height)
 
-  println("[Info]")
-  println("dataset: " + fn)
-  println("width:   " + rawimg.width)
-  println("height:  " + rawimg.height)
-  println("size:    " + sz)
-  println("")
-
-  if (! Seq(1,4).contains(sz)) {
-    println("Error: invalid size: " + sz)
-    System.exit(1)
-  }
-
-  val nshifts = (h/yd) * w
+  val nshifts = (ap.height/ap.yd) * ap.width
 
   val st = System.nanoTime()
   // need to skip frames
-  for (fno <- 0 until fnostart) {
-    if (sz == 4) rawimg.skipImageInt(in)
-    else if (sz == 1) rawimg.skipImageByte(in)
+
+  for (fno <- 0 until ap.fnostart) {
+    if (ap.psize == 4) rawimg.skipImageInt(in)
+    else if (ap.psize == 1) rawimg.skipImageByte(in)
     println(s"Skipping $fno")
   }
 
-  for (fno <- fnostart to fnostop) {
-    if (sz == 4) rawimg.readImageInt(in)
-    else if (sz == 1) rawimg.readImageByte(in)
+  for (fno <- ap.fnostart to ap.fnostop) {
+    if (ap.psize == 4) rawimg.readImageInt(in)
+    else if (ap.psize == 1) rawimg.readImageByte(in)
 
-    val zeroratio = rawimg.zerocnt.toFloat / (w*h).toFloat
+    val zeroratio = rawimg.zerocnt.toFloat / (ap.width*ap.height).toFloat
     allzeroratios += zeroratio
 
     val maxval = rawimg.maxval
@@ -315,23 +323,24 @@ object EstimatorMain extends App {
 
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
-    if (dumpflag)   {
-      rawimg.writeImageShort(f"fr$fno.gray")
-      val sampleatx=(w/2)+1
+    if(ap.dump_gray)  rawimg.writeImageShort(f"fr$fno.gray")
+    //if(ap.dump_png) //
+    if(ap.dump_vsample) {
+      val sampleatx=ap.vsamplexpos
       rawimg.writeVerticalLineSamples(f"vsample-x$sampleatx-fr$fno.txt", sampleatx)
     }
 
     // enclens is created for each frames
     var enclens = new ListBuffer[Int]()
 
-    val hyd = h - (h % yd) // to simplify, ignore the remaining
+    val hyd = ap.height - (ap.height % ap.yd) // to simplify, ignore the remaining
 
     // chunk up to rows whose height is yd
-    for (yoff <- 0 until hyd by yd) {
+    for (yoff <- 0 until hyd by ap.yd) {
       // emulate pixel shift
-      for (xoff <- 0 until w) {
+      for (xoff <- 0 until ap.width) {
         // create a column chunk, which is an input to the compressor
-        val dtmp = List.tabulate(yd)(
+        val dtmp = List.tabulate(ap.yd)(
           rno =>
           rawimg.getpx(xoff, rno + yoff))
 
@@ -347,17 +356,17 @@ object EstimatorMain extends App {
 
       if (noutpixs == 0) {
         for (l <- enclens) {
-          tmp_ratios += (yd.toFloat / l.toFloat)
+          tmp_ratios += (ap.yd.toFloat / l.toFloat)
         }
       } else {
         for (l <- enclens) {
           if (npxs_used + l < noutpixs) {
             npxs_used += l
-            input_cnt += yd
+            input_cnt += ap.yd
           } else {
             tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
             npxs_used = l
-            input_cnt = yd
+            input_cnt = ap.yd
           }
         }
         tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
@@ -371,7 +380,7 @@ object EstimatorMain extends App {
       val rmin = rtmp.reduce( (a,b) => (a min b) )
       var noncompressedcnt = 0
       rtmp.foreach( e => if(e<1.0) noncompressedcnt += 1)
-      val ncperc = noncompressedcnt.toFloat * 100.0 / (w*h).toFloat
+      val ncperc = noncompressedcnt.toFloat * 100.0 / (ap.width*ap.height).toFloat
 
       println(f"$fno%04d: mean=$rmean%.2f max=$rmax%.2f min=$rmin%.2f non=$noncompressedcnt/$nshifts ($noutpixs%2d I/O pixels)")
 
