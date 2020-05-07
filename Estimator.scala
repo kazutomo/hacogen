@@ -188,20 +188,85 @@ object EstimatorMain extends App {
     math.sqrt( (sq.sum / x.size).toDouble ).toFloat
   }
 
-  if (args.length < 6) {
-    println("Usage: RawimageAnalyzerMain rawimgfilename width height fnostart fnostop dump")
-    println("")
-    println("This command reads a simple raw image format that contains a number of glay scala images with 32-bit integer pixel value (its dynamic range is possible smaller). Width and Height are specified via command line. The image framenumber start and stop are also specified via command line.")
-    System.exit(1)
+  class Params {
+    var width = 256
+    var height = 256
+    var fnostart = 0
+    var fnostop = 0
+    var dump_gray = false
+    var dump_png = false
+    var dump_vsample = false
+    var vsamplepos = 0
+    // NOTE: assume width and height >= 256. for now, fixed
+    val window_width  = 256
+    val window_height = 256
+    var xoff = 0
+    var yoff = 0
+    // compressor params. non-adjustable for now
+    var npxbits = 9      // 9 bits per pixels
+
+    def autoxyoff() = {
+      xoff = (width/2)  - (window_width/2)
+      yoff = (height/2) - (window_width/2)
+    }
   }
 
-  val fn = args(0)
-  val w = args(1).toInt
-  val h = args(2).toInt
-  val sz = args(3).toInt // 4 is 4-byte int, 1 is 1-byte int
-  val fnostart = args(4).toInt
-  val fnostop = args(5).toInt
-  val dumpflag = args(6).toBoolean
+  var p = new Params()
+
+  def usage() {
+    println("Usage: scala EstimatorMain [options] rawimgfilename")
+    println("")
+    println("This command reads a simple raw image format that contains a number of glay scala images with 32-bit integer pixel value (its dynamic range is possible smaller). Width and Height are specified via command line. The image framenumber start and stop are also specified via command line.")
+    println("")
+    println("[Options]")
+    println("")
+    println("-width int  : width of each image frame")
+    println("-height int : height of each image frame")
+    println("-psize int  : bytes per pixel: 1 or 4")
+    println(s"-fnostart int : start frame number (default: $fnostart)")
+    println(s"-fnostop int  : stop frame number (default: $fnostop)")
+    println("-gray: dump gray images.")
+    println("-png: dump png images.")
+    println("-vsample xpos : dump vertical sample at xpos (default width/2)")
+    println("")
+  }
+
+  type AppOpts = Map[String, String]
+
+  // command line option handling
+  def nextopts(l: List[String], m: AppOpts) : AppOpts = {
+    l match {
+      case Nil => m
+      case "-h" :: tail => usage() ; sys.exit(1)
+      case "-gray" :: istr :: tail => nextopts(tail, m ++ Map("gray" -> istr ))
+      case "-png" :: istr :: tail => nextopts(tail, m ++ Map("png" -> istr ))
+      case "-vsample" :: istr :: tail => nextopts(tail, m ++ Map("vsample" -> istr ))
+      case "-width" :: istr :: tail => nextopts(tail, m ++ Map("width" -> istr ))
+      case "-height" :: istr :: tail => nextopts(tail, m ++ Map("height" -> istr ))
+      case "-psize" :: istr :: tail => nextopts(tail, m ++ Map("psize" -> istr ))
+      case "-fnostart" :: istr :: tail => nextopts(tail, m ++ Map("fnostart" -> istr ))
+      case "-fnostop" :: istr :: tail => nextopts(tail, m ++ Map("fnostop" -> istr ))
+      case str :: Nil => m ++ Map("filename" -> str)
+      case unknown => {
+        println("Unknown: " + unknown)
+        sys.exit(1)
+      }
+    }
+  }
+
+  def getIntVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toInt ; case None => println("No value found: " + k); sys.exit(1)}
+  def getStrVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v ; case None => println("No value found: " + k); sys.exit(1)}
+  def getBoolVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toBoolean ; case None => println("No value found: " + k); sys.exit(1)}
+
+  val m = nextopts(args.toList, Map())
+
+  val fn = getStrVal(m, "filename")
+  val w = getIntVal(m, "width")
+  val h = getIntVal(m, "height")
+  val sz = getIntVal(m, "psize")
+  val fnostart = getIntVal(m, "fnostart")
+  val fnostop = getIntVal(m, "fnostop")
+  val dumpflag = getBoolVal(m, "gray")
 
   val yd = 16  // the size input to the encoder
 
