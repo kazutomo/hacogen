@@ -5,6 +5,9 @@ import java.nio.ByteBuffer
 import Array._
 import scala.collection.mutable.ListBuffer
 
+import javax.imageio.ImageIO // png
+import java.awt.image.BufferedImage // png
+
 class AppParams {
   def usage() {
     println("Usage: scala EstimatorMain [options] rawimgfilename")
@@ -82,6 +85,7 @@ class AppParams {
     fnostart = getIntVal(m, "fnostart")
     fnostop = getIntVal(m, "fnostop")
     dump_gray = getBoolVal(m, "gray")
+    dump_png = getBoolVal(m, "png")
 
     m.get("vsample") match {
       case Some(v) => dump_vsample = true; vsamplexpos = v.toInt
@@ -110,7 +114,6 @@ class AppParams {
 // loads and stores the raw image and methods that analyzes data
 // (maximum value, zero pixel count, etc).
 //
-
 class RawImageDataSet(val width: Int, val height: Int)
 {
   // image pixel data
@@ -148,15 +151,9 @@ class RawImageDataSet(val width: Int, val height: Int)
     tmp
   }
 
-  def skipImageInt(in: FileInputStream) {
-    val step = 4
+  def skipImage(in: FileInputStream, step: Int) {
     in.skip((width*height)*step)
   }
-  def skipImageByte(in: FileInputStream) {
-    val step = 1
-    in.skip((width*height)*step)
-  }
-
 
   // read an image with 4-byte integer pixels (4 * w * h bytes) and
   // store it to pixels.  maxval and zerocnt are updated
@@ -234,26 +231,77 @@ class RawImageDataSet(val width: Int, val height: Int)
       val out = new FileOutputStream(fn)
       out.write(buf)
       out.close()
-      println("Stored to " + fn)
     } catch {
       case e: FileNotFoundException => println("Not found:" + fn)
       case e: IOException => println("Failed to write")
     }
-
     true
   }
 
-  // ad-hoc dump utility
-  def writeVerticalLineSamples(fn: String, x: Int) {
+  // pixel value higher equal than threshold, assign the max brightness
+  def writePng(fn: String, threshold: Int) : Unit = {
+    val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    def graytorgb(a: Int) = (a<<16) | (a<<8) | a
+
+    for (x <- 0 until width) {
+      for (y <- 0 until height) {
+        val tmp = getpx(x,y)
+        val tmp2 = if(tmp>=threshold) 255 else tmp
+        img.setRGB(x, y,  graytorgb(tmp2))
+      }
+    }
+    ImageIO.write(img, "png", new File(fn))
+  }
+
+
+  def getVerticalLineSample(x: Int, y1: Int, y2: Int) : List[Int] = {
+    List.tabulate(y2-y1) {i => getpx(x, y1 + i) }
+  }
+
+  def shuffleVerticalLineSample(data: List[Int], stride: Int) : List[Int] = {
+    val a = data.toArray
+    List.tabulate(data.length) {i =>  a( ((i%stride)*stride) + (i/stride) )}
+  }
+
+  def bitshuffleVerticalLineSample(data: List[Int], npxblock: Int, bitspx: Int) : List[Int] = {
+    var reslen = (data.length/npxblock) * bitspx
+    var res = new Array[Int](reslen)
+    var pidx = 0 // index in List
+    val maxval = (1<<bitspx) - 1
+
+    // convert data to bits array
+    // each element hold particular bit in a pixel
+    def bits2list(v: Int, b: Int) : List[Int] = { List.tabulate(b) { idx => if (((1<<idx)&v)>0) 1 else 0 } }
+    var btmp = ListBuffer[Int]() // a bit wasting...
+    for(p <- data) {
+      val pclip = if (p>maxval) maxval else p
+      bits2list(pclip, bitspx).foreach {v => btmp += v}
+    }
+
+    val bdata = btmp.toArray
+    // println(s"bdata.length=$bdata.length npxblock=$npxblock bitspx=$bitspx")
+
+    // constructing output, filling res
+    for (idxbase <- 0 until bdata.length by (npxblock*bitspx)) {
+      val residxbase = (idxbase / (npxblock*bitspx)) * bitspx
+
+      // bidx is pixel pos in dst
+      for(bidx <- 0 until bitspx) {
+        // collect bidx'th bit's value from all pixels in a block
+        val tmp = List.tabulate(npxblock)
+        {i => bdata(idxbase + i*bitspx + bidx) << i }
+
+        res(residxbase + bidx) = tmp.reduce(_|_)
+      }
+    }
+    res.toList
+  }
+
+  def writeData2Text(fn: String, data: List[Int]) {
     try {
       val f = new File(fn)
       val out = new BufferedWriter(new FileWriter(f))
-
-      println(s"Stored samples@$x to $fn")
-      for (y <- 0 until height) {
-        val v = getpx(x, y)
-        out.write(f"$v\n")
-      }
+      data.foreach{v => out.write(f"$v\n")}
       out.close()
     } catch {
       case e: FileNotFoundException => println("Not found:" + fn)
@@ -261,7 +309,6 @@ class RawImageDataSet(val width: Int, val height: Int)
     }
   }
 }
-
 
 object EstimatorMain extends App {
 
@@ -303,11 +350,10 @@ object EstimatorMain extends App {
   val nshifts = (ap.height/ap.yd) * ap.width
 
   val st = System.nanoTime()
-  // need to skip frames
 
+  // need to skip frames
   for (fno <- 0 until ap.fnostart) {
-    if (ap.psize == 4) rawimg.skipImageInt(in)
-    else if (ap.psize == 1) rawimg.skipImageByte(in)
+    rawimg.skipImage(in, ap.psize)
     println(s"Skipping $fno")
   }
 
@@ -323,11 +369,35 @@ object EstimatorMain extends App {
 
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
-    if(ap.dump_gray)  rawimg.writeImageShort(f"fr$fno.gray")
-    //if(ap.dump_png) //
+    if(ap.dump_gray)  {
+      val grayfn = f"fr${fno}.gray"
+      println(s"Writing $grayfn")
+      rawimg.writeImageShort(grayfn)
+    }
+    if(ap.dump_png) {
+      val pngfn = f"fr${fno}.png"
+      println(s"Writing $pngfn")
+      rawimg.writePng(pngfn, 1)
+    }
+
     if(ap.dump_vsample) {
-      val sampleatx=ap.vsamplexpos
-      rawimg.writeVerticalLineSamples(f"vsample-x$sampleatx-fr$fno.txt", sampleatx)
+      val vsx = ap.vsamplexpos
+      val vsy1 = ap.yoff
+      val vsy2 = ap.yoff + ap.window_height
+      val vs = rawimg.getVerticalLineSample(vsx, vsy1, vsy2)
+      val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+      println(s"Writing $vsfn")
+      rawimg.writeData2Text(vsfn, vs)
+/*
+      val vss = rawimg.shuffleVerticalLineSample(vs, 16)
+      val vssfn = f"vsample-shuffle16-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+      println(s"Writing $vssfn")
+      rawimg.writeData2Text(vssfn, vss)
+ */
+      val vsbs = rawimg.bitshuffleVerticalLineSample(vs, 16, 9)
+      val vsbsfn = f"vsample-9bitshuffle16-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+      println(s"Writing $vsbsfn")
+      rawimg.writeData2Text(vsbsfn, vsbs)
     }
 
     // enclens is created for each frames
