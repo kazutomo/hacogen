@@ -1,10 +1,9 @@
-//package rawdata
+package rawimagetool
 
+import Array._
 import java.io._
 import java.nio.ByteBuffer
-import Array._
 import scala.collection.mutable.ListBuffer
-
 import javax.imageio.ImageIO // png
 import java.awt.image.BufferedImage // png
 
@@ -107,209 +106,6 @@ class AppParams {
   }
 }
 
-
-// A class for manipulating a simple raw image data set that does not
-// include metadata information such as width, height, pixel data
-// type, the number of image, etc. This class provides methods that
-// loads and stores the raw image and methods that analyzes data
-// (maximum value, zero pixel count, etc).
-//
-class RawImageDataSet(val width: Int, val height: Int)
-{
-  // image pixel data
-  private var pixels = ofDim[Int](height, width) // index order; y -> x
-  // helper function
-  def setpx(x: Int, y: Int, v: Int) : Unit = pixels(y)(x) = v
-  def getpx(x: Int, y: Int) : Int = pixels(y)(x)
-
-  // statistical info
-  var maxval = 0
-  var zerocnt = 0
-
-  def resetpixels(v: Int = 0) : Unit = {
-    for(y <- 0 until height; x <- 0 until width) setpx(x, y, v)
-    maxval = 0
-    zerocnt = 0
-  }
-
-  def BytesToInt(buf: Array[Byte]) : Int = {
-    val ret = ByteBuffer.wrap(buf.reverse).getInt
-    /*
-    if(buf(3) != 0 ||buf(2) != 0 ||buf(1) != 0) {
-      println(f"${buf(3)}:${buf(2)}:${buf(1)}:${buf(0)} => $ret")
-    }
-     */
-    ret
-  }
-
-  def ShortToBytes(v: Short): Array[Byte] = {
-    val tmp = new Array[Byte](2)
-
-    tmp(0) = v.toByte
-    tmp(1) = (v >> 8).toByte
-
-    tmp
-  }
-
-  def skipImage(in: FileInputStream, step: Int) {
-    in.skip((width*height)*step)
-  }
-
-  // read an image with 4-byte integer pixels (4 * w * h bytes) and
-  // store it to pixels.  maxval and zerocnt are updated
-  def readImageInt(in: FileInputStream) {
-    resetpixels()
-
-    val step = 4
-    try {
-      val buf = new Array[Byte]( (width*height)*step )
-
-      in.read(buf)
-
-      for (y <- 0 until height) {
-        for (x <- 0 until width) {
-          var idx = y * width + x
-          val v = BytesToInt(buf.slice(idx*step, idx*step+4))
-
-          // NOTE: take only positive values
-          val clipval=(1<<16)-1
-          val v2 = if (v < 0) {0} else {if (v>=clipval) clipval else v}
-          // val v2 = v.abs
-          if (v2 == 0) zerocnt += 1
-          if (v2 > maxval) { maxval = v2 }
-          setpx(x, y, v2)
-        }
-      }
-    } catch {
-      case e: IOException => println("Failed to read")
-    }
-  }
-
-  // read an image with 1-byte integer pixels (w * h bytes) and
-  // store it to pixels.  maxval and zerocnt are updated
-  def readImageByte(in: FileInputStream) {
-    resetpixels()
-
-    try {
-      val buf = new Array[Byte](width*height)
-      in.read(buf)
-      for (y <- 0 until height) {
-        for (x <- 0 until width) {
-          var idx = y * width + x
-          val v = buf(idx).toInt
-          if (v == 0) zerocnt += 1
-          if (v > maxval) { maxval = v }
-          setpx(x, y, v)
-        }
-      }
-    } catch {
-      case e: IOException => println("Failed to read")
-    }
-  }
-
-
-  // implement this later when needed
-  // def writeImageInt(fn: String, w: Int, h: Int) : Boolean
-
-  // write the current image into a file for a debug purpose
-  def writeImageShort(fn: String) : Boolean = {
-    val step = 2
-    var buf = new Array[Byte]((width*height) * step)
-
-    for (y <- 0 until height; x <- 0 until width ) {
-      val v = getpx(x, y)
-      val sval : Short = if (v < 0) 0 else v.toShort
-      // val sval : Short = if (v <= 0) 0 else 1
-      val tmp = ShortToBytes(sval)
-      val idx = y*width + x
-
-      buf(idx*2 + 0) = tmp(0)
-      buf(idx*2 + 1) = tmp(1)
-    }
-
-    try {
-      val out = new FileOutputStream(fn)
-      out.write(buf)
-      out.close()
-    } catch {
-      case e: FileNotFoundException => println("Not found:" + fn)
-      case e: IOException => println("Failed to write")
-    }
-    true
-  }
-
-  // pixel value higher equal than threshold, assign the max brightness
-  def writePng(fn: String, threshold: Int) : Unit = {
-    val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-    def graytorgb(a: Int) = (a<<16) | (a<<8) | a
-
-    for (x <- 0 until width) {
-      for (y <- 0 until height) {
-        val tmp = getpx(x,y)
-        val tmp2 = if(tmp>=threshold) 255 else tmp
-        img.setRGB(x, y,  graytorgb(tmp2))
-      }
-    }
-    ImageIO.write(img, "png", new File(fn))
-  }
-
-
-  def getVerticalLineSample(x: Int, y1: Int, y2: Int) : List[Int] = {
-    List.tabulate(y2-y1) {i => getpx(x, y1 + i) }
-  }
-
-  def shuffleVerticalLineSample(data: List[Int], stride: Int) : List[Int] = {
-    val a = data.toArray
-    List.tabulate(data.length) {i =>  a( ((i%stride)*stride) + (i/stride) )}
-  }
-
-  def bitshuffleVerticalLineSample(data: List[Int], npxblock: Int, bitspx: Int) : List[Int] = {
-    var reslen = (data.length/npxblock) * bitspx
-    var res = new Array[Int](reslen)
-    var pidx = 0 // index in List
-    val maxval = (1<<bitspx) - 1
-
-    // convert data to bits array
-    // each element hold particular bit in a pixel
-    def bits2list(v: Int, b: Int) : List[Int] = { List.tabulate(b) { idx => if (((1<<idx)&v)>0) 1 else 0 } }
-    var btmp = ListBuffer[Int]() // a bit wasting...
-    for(p <- data) {
-      val pclip = if (p>maxval) maxval else p
-      bits2list(pclip, bitspx).foreach {v => btmp += v}
-    }
-
-    val bdata = btmp.toArray
-    // println(s"bdata.length=$bdata.length npxblock=$npxblock bitspx=$bitspx")
-
-    // constructing output, filling res
-    for (idxbase <- 0 until bdata.length by (npxblock*bitspx)) {
-      val residxbase = (idxbase / (npxblock*bitspx)) * bitspx
-
-      // bidx is pixel pos in dst
-      for(bidx <- 0 until bitspx) {
-        // collect bidx'th bit's value from all pixels in a block
-        val tmp = List.tabulate(npxblock)
-        {i => bdata(idxbase + i*bitspx + bidx) << i }
-
-        res(residxbase + bidx) = tmp.reduce(_|_)
-      }
-    }
-    res.toList
-  }
-
-  def writeData2Text(fn: String, data: List[Int]) {
-    try {
-      val f = new File(fn)
-      val out = new BufferedWriter(new FileWriter(f))
-      data.foreach{v => out.write(f"$v\n")}
-      out.close()
-    } catch {
-      case e: FileNotFoundException => println("Not found:" + fn)
-      case e: IOException => println("Failed to write")
-    }
-  }
-}
-
 object EstimatorMain extends App {
 
   // software-based encoding for validation
@@ -338,23 +134,22 @@ object EstimatorMain extends App {
   ap.printinfo()
 
   //
-
   var allratios28 = new ListBuffer[Float]()
   var allratios56 = new ListBuffer[Float]()
   var allzeroratios = new ListBuffer[Float]()
 
   // open a dataset
   val in = new FileInputStream(ap.filename)
-  val rawimg = new RawImageDataSet(ap.width, ap.height)
+  val rawimg = new RawImageTool(ap.width, ap.height)
 
   val nshifts = (ap.height/ap.yd) * ap.width
 
   val st = System.nanoTime()
 
   // need to skip frames
+  println(s"Skipping to ${ap.fnostart}")
   for (fno <- 0 until ap.fnostart) {
     rawimg.skipImage(in, ap.psize)
-    println(s"Skipping $fno")
   }
 
   for (fno <- ap.fnostart to ap.fnostop) {
@@ -384,18 +179,24 @@ object EstimatorMain extends App {
       val vsx = ap.vsamplexpos
       val vsy1 = ap.yoff
       val vsy2 = ap.yoff + ap.window_height
-      val vs = rawimg.getVerticalLineSample(vsx, vsy1, vsy2)
+      val vs0 = rawimg.getVerticalLineSample(vsx, vsy1, vsy2)
       val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+
+      val bitspx = 9
+      val npxblock = 16
+
+      val vs = rawimg.clipSample(vs0, bitspx)
       println(s"Writing $vsfn")
       rawimg.writeData2Text(vsfn, vs)
-/*
-      val vss = rawimg.shuffleVerticalLineSample(vs, 16)
-      val vssfn = f"vsample-shuffle16-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
-      println(s"Writing $vssfn")
-      rawimg.writeData2Text(vssfn, vss)
- */
-      val vsbs = rawimg.bitshuffleVerticalLineSample(vs, 16, 9)
-      val vsbsfn = f"vsample-9bitshuffle16-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+      val rl = rawimg.runlengthIdealEstimate(vs)
+      val zs = rawimg.zsIdealEstimate(vs, npxblock)
+      println(s"Ideal estimate: rl=${rl.length} zs=${zs.length}")
+      
+      val vsbs = rawimg.bitshuffleVerticalLineSample(vs, npxblock, bitspx)
+      val vsbsfn = f"vsample-${bitspx}bitshuffle${npxblock}-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+      val zs2 = rawimg.zsIdealEstimate(vsbs, npxblock)
+      println(s"Ideal estimate: zs2=${zs2.length}")
+
       println(s"Writing $vsbsfn")
       rawimg.writeData2Text(vsbsfn, vsbs)
     }

@@ -38,9 +38,9 @@ l list:
 h help:
 	sbt "test:runMain hacogen.TestMain --help"
 
-EstimatorMain.class: Estimator.scala
+EstimatorMain.class: Estimator.scala RawImageTool.scala
 	mkdir -p classes
-	fsc -d classes Estimator.scala
+	fsc -d classes $^
 
 clean:
 	rm -rf project target test_run_dir generated *.class
