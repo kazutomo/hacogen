@@ -24,6 +24,7 @@ class AppParams {
     println(s"-fnostop int  : stop frame number (default: $fnostop)")
     println("-gray: dump gray images.")
     println("-png: dump png images.")
+    println("-pngregion: dump png images.")
     println("-vsample xpos : dump vertical sample at xpos (default width/2)")
     println("")
   }
@@ -36,6 +37,7 @@ class AppParams {
   var fnostop = 0
   var dump_gray = false
   var dump_png = false
+  var dump_pngregion = false
   var dump_vsample = false
   var vsamplexpos = 0
   // NOTE: assume width and height >= 256. for now, fixed
@@ -56,12 +58,15 @@ class AppParams {
       case "-h" :: tail => usage() ; sys.exit(1)
       case "-gray" :: istr :: tail => nextopts(tail, m ++ Map("gray" -> istr ))
       case "-png" :: istr :: tail => nextopts(tail, m ++ Map("png" -> istr ))
+      case "-pngregion" :: istr :: tail => nextopts(tail, m ++ Map("pngregion" -> istr ))
       case "-vsample" :: istr :: tail => nextopts(tail, m ++ Map("vsample" -> istr ))
       case "-width" :: istr :: tail => nextopts(tail, m ++ Map("width" -> istr ))
       case "-height" :: istr :: tail => nextopts(tail, m ++ Map("height" -> istr ))
       case "-psize" :: istr :: tail => nextopts(tail, m ++ Map("psize" -> istr ))
       case "-fnostart" :: istr :: tail => nextopts(tail, m ++ Map("fnostart" -> istr ))
       case "-fnostop" :: istr :: tail => nextopts(tail, m ++ Map("fnostop" -> istr ))
+      case "-xoff" :: istr :: tail => nextopts(tail, m ++ Map("xoff" -> istr ))
+      case "-yoff" :: istr :: tail => nextopts(tail, m ++ Map("yoff" -> istr ))
       case str :: Nil => m ++ Map("filename" -> str)
       case unknown => {
         println("Unknown: " + unknown)
@@ -78,24 +83,25 @@ class AppParams {
       case None => println("No filename found"); usage(); sys.exit(1)
     }
     def getIntVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toInt ; case None => println("No value found: " + k); sys.exit(1)}
+
     def getBoolVal(m: AppOpts, k: String) = m.get(k) match {case Some(v) => v.toBoolean ; case None => println("No value found: " + k); sys.exit(1)}
 
     width = getIntVal(m, "width")
     height = getIntVal(m, "height")
     psize = getIntVal(m, "psize")
-    fnostart = getIntVal(m, "fnostart")
-    fnostop = getIntVal(m, "fnostop")
-    dump_gray = getBoolVal(m, "gray")
-    dump_png = getBoolVal(m, "png")
+    // fix the followings later!. not elegant
+    if (m contains "fnostart") fnostart = getIntVal(m, "fnostart")
+    if (m contains "fnostop")  fnostop = getIntVal(m, "fnostop")
+    if (m contains "xoff") xoff = getIntVal(m, "xoff")
+    if (m contains "yoff") yoff = getIntVal(m, "yoff")
+    if (m contains "gray") dump_gray = getBoolVal(m, "gray")
+    if (m contains "png") dump_png = getBoolVal(m, "png")
+    if (m contains "pngregion")   dump_pngregion = getBoolVal(m, "pngregion")
 
     m.get("vsample") match {
       case Some(v) => dump_vsample = true; vsamplexpos = v.toInt
-      case None => 0
+      case None => println("vsample needs value")
     }
-
-    // FIX: add xoff,yoff later
-    xoff = (width/2)  - (window_width/2)
-    yoff = (height/2) - (window_width/2)
   }
 
   def printinfo() = {
@@ -104,6 +110,7 @@ class AppParams {
     println("width:   " + width)
     println("height:  " + height)
     println("size:    " + psize)
+    println(s"offset:  x=$xoff, y=$yoff")
     println("")
   }
 }
@@ -164,41 +171,60 @@ object EstimatorMain extends App {
       println(s"Writing $pngfn")
       rawimg.writePng(pngfn, 1)
     }
+    if(ap.dump_pngregion) {
+      val pngfn = f"fr${fno}-${ap.window_width}x${ap.window_height}+${ap.xoff}+${ap.yoff}.png"
+      println(s"Writing $pngfn")
+      rawimg.writePngRegion(pngfn, 1, ap.xoff, ap.yoff,
+        ap.window_width, ap.window_height);
+    }
 
     if(ap.dump_vsample) {
       val dumptext = false
       val bitspx = 9
       val npxblock = 16
 
-      val vsx = ap.vsamplexpos
-      val vsy1 = ap.yoff
-      val vsy2 = ap.yoff + ap.window_height
-      val vs0 = rawimg.getVerticalLineSample(vsx, vsy1, vsy2)
+      // for compression ratio stats
+      var rlcrs = new ListBuffer[Float]()
+      var zscrs = new ListBuffer[Float]()
+      var zs2crs = new ListBuffer[Float]()
 
-      //val vs = rawimg.clipSample(vs0, bitspx)
-      val vs = vs0
-      if(dumptext) {
-        val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
-        println(s"Writing $vsfn")
-        rawimg.writeData2Text(vsfn, vs)
-      }
-      val rl = rawimg.runlengthEncoding(vs)
-      val zs = rawimg.zsEncoding(vs, npxblock)
-      val rlcr = vs.length.toFloat/rl.length
-      val zscr = vs.length.toFloat/zs.length
-      println(s"RL: ${rl.length} => ${rlcr}x")
-      println(s"ZS: ${zs.length} => ${zscr}x")
-      
-      val vsbs = rawimg.bitshuffleVerticalLineSample(vs, npxblock, bitspx)
-      val vsbsfn = f"vsample-${bitspx}bitshuffle${npxblock}-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
-      val zs2 = rawimg.zsEncoding(vsbs, npxblock)
-      val zs2cr = vs.length.toFloat/zs2.length
+      for (vsx <- ap.xoff until ap.xoff + ap.window_width) {
+        val vsy1 = ap.yoff
+        val vsy2 = ap.yoff + ap.window_height
+        val vs0 = rawimg.getVerticalLineSample(vsx, vsy1, vsy2)
 
-      println(s"ZSS: ${zs2.length} => ${zs2cr}x")
-      if(dumptext) {
-        println(s"Writing $vsbsfn")
-        rawimg.writeData2Text(vsbsfn, vsbs)
+        //val vs = rawimg.clipSample(vs0, bitspx)
+        val vs = vs0
+        if(dumptext) {
+          val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+          println(s"Writing $vsfn")
+          rawimg.writeData2Text(vsfn, vs)
+        }
+        val rl = rawimg.runlengthEncoding(vs)
+        val zs = rawimg.zsEncoding(vs, npxblock, 2)
+        val rlcr = vs.length.toFloat/rl.length
+        val zscr = vs.length.toFloat/zs.length
+        rlcrs += rlcr
+        zscrs += zscr
+
+        //println(s"RL: ${rl.length} => ${rlcr}x")
+        //println(s"ZS: ${zs.length} => ${zscr}x")
+
+        val vsbs = rawimg.bitshuffleVerticalLineSample(vs, npxblock, bitspx)
+        val vsbsfn = f"vsample-${bitspx}bitshuffle${npxblock}-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+        val zs2 = rawimg.zsEncoding(vsbs, npxblock, 1)
+        val zs2cr = (vs.length.toFloat/npxblock*bitspx) /zs2.length
+        zs2crs += zs2cr
+        //println(s"ZSS: ${zs2.length} => ${zs2cr}x")
+        if(dumptext) {
+          println(s"Writing $vsbsfn")
+          rawimg.writeData2Text(vsbsfn, vsbs)
+        }
       }
+
+      printstats("RL ", rlcrs.toList)
+      printstats("ZS ", zscrs.toList)
+      printstats("ZS2", zs2crs.toList)
 
       sys.exit(0)
     }

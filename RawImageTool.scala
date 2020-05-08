@@ -147,16 +147,30 @@ class RawImageTool(val width: Int, val height: Int)
       for (y <- 0 until height) {
         val tmp = getpx(x,y)
         val tmp2 = if(tmp>=threshold) 255 else tmp
-
+/*
         if( (x>0 && (x % 256)==0) || (y>0 && (y % 256)==0) )
           img.setRGB(x, y,  0xff0000)
         else
+ */
           img.setRGB(x, y,  graytorgb(tmp2))
       }
     }
     ImageIO.write(img, "png", new File(fn))
   }
 
+  def writePngRegion(fn: String, threshold: Int, xoff: Int, yoff: Int, w: Int, h: Int) : Unit = {
+    val img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB)
+    def graytorgb(a: Int) = (a<<16) | (a<<8) | a
+
+    for (x <- xoff until xoff+w) {
+      for (y <- yoff until yoff+h) {
+        val tmp = getpx(x,y)
+        val tmp2 = if(tmp>=threshold) 255 else tmp
+        img.setRGB(x-xoff, y-yoff,  graytorgb(tmp2))
+      }
+    }
+    ImageIO.write(img, "png", new File(fn))
+  }
 
   def getVerticalLineSample(x: Int, y1: Int, y2: Int) : List[Int] = {
     List.tabulate(y2-y1) {i => getpx(x, y1 + i) }
@@ -189,11 +203,11 @@ class RawImageTool(val width: Int, val height: Int)
   }
 
   // zero-suppression
-  def zsEncoding(data: List[Int], npxblock: Int) : List[Int] = {
+  def zsEncoding(data: List[Int], npxblock: Int, nheaders: Int) : List[Int] = {
     var res = ListBuffer[Int]()
 
     for(i <- 0 until data.length by npxblock) {
-      res += 0xffff // dummy header
+      for (j <- 0 until nheaders)  res += 0xffff // dummy header
       data.slice(i, i+npxblock).filter(_ > 0).foreach {v => res += v}
     }
     res.toList
@@ -226,7 +240,7 @@ class RawImageTool(val width: Int, val height: Int)
 
     for (block <- data.sliding(npxblock, npxblock)) {
       res = res ::: bitshuffleBlock(block, bitspx)
-
+/*
       val a = bitshuffleBlock(block, bitspx)
       val b = bitshuffleBlock(a, npxblock)
       for ((p,q) <- block zip b) {
@@ -234,6 +248,7 @@ class RawImageTool(val width: Int, val height: Int)
           println(s"ERROR: $p $q")
         }
       }
+ */
     }
     res
   }
