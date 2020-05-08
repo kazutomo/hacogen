@@ -147,7 +147,11 @@ class RawImageTool(val width: Int, val height: Int)
       for (y <- 0 until height) {
         val tmp = getpx(x,y)
         val tmp2 = if(tmp>=threshold) 255 else tmp
-        img.setRGB(x, y,  graytorgb(tmp2))
+
+        if( (x>0 && (x % 256)==0) || (y>0 && (y % 256)==0) )
+          img.setRGB(x, y,  0xff0000)
+        else
+          img.setRGB(x, y,  graytorgb(tmp2))
       }
     }
     ImageIO.write(img, "png", new File(fn))
@@ -163,7 +167,8 @@ class RawImageTool(val width: Int, val height: Int)
     List.tabulate(data.length) {i =>  a( ((i%stride)*stride) + (i/stride) )}
   }
 
-  def runlengthIdealEstimate(data: List[Int]) : List[Int] = {
+  // simple runlength encoding
+  def runlengthEncoding(data: List[Int]) : List[Int] = {
     var curval = 0
     var cnt = 0
     var res = ListBuffer[Int]()
@@ -183,7 +188,8 @@ class RawImageTool(val width: Int, val height: Int)
     res.toList
   }
 
-  def zsIdealEstimate(data: List[Int], npxblock: Int) : List[Int] = {
+  // zero-suppression
+  def zsEncoding(data: List[Int], npxblock: Int) : List[Int] = {
     var res = ListBuffer[Int]()
 
     for(i <- 0 until data.length by npxblock) {
@@ -194,42 +200,43 @@ class RawImageTool(val width: Int, val height: Int)
   }
 
   def clipSample(data: List[Int], bitspx: Int) : List[Int] = {
-    val maxval = (1<<bitspx) - 1 // move out 
+    val maxval = (1<<bitspx) - 1 // move out
     data.map(v => if(v < maxval) v else maxval)
   }
 
-  def bitshuffleVerticalLineSample(data: List[Int], npxblock: Int, bitspx: Int) : List[Int] = {
-    var reslen = (data.length/npxblock) * bitspx
-    var res = new Array[Int](reslen)
-    var pidx = 0 // index in List
+  // Assume that pxs.length is npxblock and each px is bitspx bits
+  // The length of a returned list is bitspx and each px is npxblock bits
+  // pin_i_j => pout_j_i, where i is i-the element in list and j is j-th bit of the element. it resembles a matrix transpose operation.
+  // also note that this is a reversible operation.
+  def bitshuffleBlock(pxs: List[Int], bitspx: Int) : List[Int] = {
+    val npxblock = pxs.length
+    val inp = pxs.toArray
+    var res = new Array[Int](bitspx)
 
-
-    // convert data to bits array
-    // each element hold particular bit in a pixel
-    def bits2list(v: Int, b: Int) : List[Int] = { List.tabulate(b) { idx => if (((1<<idx)&v)>0) 1 else 0 } }
-    var btmp = ListBuffer[Int]() // a bit wasting...
-    for(p <- data) {
-      bits2list(p, bitspx).foreach {v => btmp += v}
-    }
-    val bdata = btmp.toArray
-    // println(s"bdata.length=$bdata.length npxblock=$npxblock bitspx=$bitspx")
-
-    // constructing output, filling res
-    for (idxbase <- 0 until bdata.length by (npxblock*bitspx)) {
-      val residxbase = (idxbase / (npxblock*bitspx)) * bitspx
-
-      // bidx is pixel pos in dst
-      for(bidx <- 0 until bitspx) {
-        // collect bidx'th bit's value from all pixels in a block
-        val tmp = List.tabulate(npxblock)
-        {i => bdata(idxbase + i*bitspx + bidx) << i }
-
-        res(residxbase + bidx) = tmp.reduce(_|_)
-      }
+    for (bpos <- 0 until bitspx) {
+      res(bpos) =
+        List.tabulate(npxblock) {i => if((inp(i)&(1<<bpos)) > 0) 1<<i else 0} reduce (_|_)
     }
     res.toList
   }
 
+  // Assume that data.length is a multiple of npxblock
+  def bitshuffleVerticalLineSample(data: List[Int], npxblock: Int, bitspx: Int) : List[Int] = {
+    var res = List[Int]()
+
+    for (block <- data.sliding(npxblock, npxblock)) {
+      res = res ::: bitshuffleBlock(block, bitspx)
+
+      val a = bitshuffleBlock(block, bitspx)
+      val b = bitshuffleBlock(a, npxblock)
+      for ((p,q) <- block zip b) {
+        if (p != q) {
+          println(s"ERROR: $p $q")
+        }
+      }
+    }
+    res
+  }
 
 
   def writeData2Text(fn: String, data: List[Int]) {

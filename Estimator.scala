@@ -166,29 +166,41 @@ object EstimatorMain extends App {
     }
 
     if(ap.dump_vsample) {
+      val dumptext = false
+      val bitspx = 9
+      val npxblock = 16
+
       val vsx = ap.vsamplexpos
       val vsy1 = ap.yoff
       val vsy2 = ap.yoff + ap.window_height
       val vs0 = rawimg.getVerticalLineSample(vsx, vsy1, vsy2)
-      val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
 
-      val bitspx = 9
-      val npxblock = 16
-
-      val vs = rawimg.clipSample(vs0, bitspx)
-      println(s"Writing $vsfn")
-      rawimg.writeData2Text(vsfn, vs)
-      val rl = rawimg.runlengthIdealEstimate(vs)
-      val zs = rawimg.zsIdealEstimate(vs, npxblock)
-      println(s"Ideal estimate: rl=${rl.length} zs=${zs.length}")
+      //val vs = rawimg.clipSample(vs0, bitspx)
+      val vs = vs0
+      if(dumptext) {
+        val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
+        println(s"Writing $vsfn")
+        rawimg.writeData2Text(vsfn, vs)
+      }
+      val rl = rawimg.runlengthEncoding(vs)
+      val zs = rawimg.zsEncoding(vs, npxblock)
+      val rlcr = vs.length.toFloat/rl.length
+      val zscr = vs.length.toFloat/zs.length
+      println(s"RL: ${rl.length} => ${rlcr}x")
+      println(s"ZS: ${zs.length} => ${zscr}x")
       
       val vsbs = rawimg.bitshuffleVerticalLineSample(vs, npxblock, bitspx)
       val vsbsfn = f"vsample-${bitspx}bitshuffle${npxblock}-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
-      val zs2 = rawimg.zsIdealEstimate(vsbs, npxblock)
-      println(s"Ideal estimate: zs2=${zs2.length}")
+      val zs2 = rawimg.zsEncoding(vsbs, npxblock)
+      val zs2cr = vs.length.toFloat/zs2.length
 
-      println(s"Writing $vsbsfn")
-      rawimg.writeData2Text(vsbsfn, vsbs)
+      println(s"ZSS: ${zs2.length} => ${zs2cr}x")
+      if(dumptext) {
+        println(s"Writing $vsbsfn")
+        rawimg.writeData2Text(vsbsfn, vsbs)
+      }
+
+      sys.exit(0)
     }
 
     // enclens is created for each frames
@@ -254,14 +266,6 @@ object EstimatorMain extends App {
   val et = System.nanoTime()
   val psec = (et-st)*1e-9
 
-  def printstats(label: String, l: List[Float]) {
-    val mean = l.sum / l.size
-    val std  = stddev(l)
-    val maxv = l.reduce((a,b) => (a max b))
-    val minv = l.reduce((a,b) => (a min b))
-
-    println(f"$label%-10s :  mean=$mean%.3f std=$std%.3f min=$minv%.3f max=$maxv%.3f")
-  }
   println()
   println("-" * 60)
   printstats("zeroratio", allzeroratios.toList)
