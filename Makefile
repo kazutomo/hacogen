@@ -38,9 +38,26 @@ l list:
 h help:
 	sbt "test:runMain hacogen.TestMain --help"
 
-EstimatorMain.class: Estimator.scala RawImageTool.scala
-	mkdir -p classes
-	fsc -d classes $^
+
+classes/EstimatorMain.class: Estimator.scala
+	@mkdir -p classes
+	fsc -d classes $<
+
+classes/rawimagetool/RawImageTool.class: RawImageTool.scala
+	@mkdir -p classes
+	fsc -d classes $<
+
+classes/localutil/Localutils.class: Localutils.scala
+	@mkdir -p classes
+	fsc -d classes $<
+
+EstimatorClasses=\
+classes/rawimagetool/RawImageTool.class \
+classes/localutil/Localutils.class \
+classes/EstimatorMain.class
+
+Estimator: $(EstimatorClasses)
+
 
 clean:
 	rm -rf project target test_run_dir generated *.class

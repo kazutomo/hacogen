@@ -1,11 +1,13 @@
-package rawimagetool
-
 import Array._
 import java.io._
 import java.nio.ByteBuffer
 import scala.collection.mutable.ListBuffer
 import javax.imageio.ImageIO // png
 import java.awt.image.BufferedImage // png
+
+// local claases
+import rawimagetool._
+import localutil.Util._
 
 class AppParams {
   def usage() {
@@ -114,18 +116,6 @@ object EstimatorMain extends App {
     val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
     val nonzero = px.filter(x => x > 0)
     return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1) )
-  }
-
-  def printmemoryusage : Unit = {
-    val r = Runtime.getRuntime
-    println( "Free(MB) : " + (r.freeMemory >> 20) )
-    println( "Total(MB): " + (r.totalMemory >> 20) )
-  }
-
-  def stddev(x: List[Float]) : Float = {
-    val m = x.sum / x.size
-    val sq = x map(v => (v-m)*(v-m))
-    math.sqrt( (sq.sum / x.size).toDouble ).toFloat
   }
 
   var ap = new AppParams()
@@ -257,17 +247,12 @@ object EstimatorMain extends App {
 
       rmean
     }
-
-    //allratios0  += estimate_ratios(0) // ideal case
-    //allratios16 += estimate_ratios(16)
-    //allratios18 += estimate_ratios(18)
     allratios28 += estimate_ratios(28)
     allratios56 += estimate_ratios(56)
   }
 
   val et = System.nanoTime()
   val psec = (et-st)*1e-9
-
 
   def printstats(label: String, l: List[Float]) {
     val mean = l.sum / l.size
