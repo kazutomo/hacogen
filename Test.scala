@@ -9,16 +9,18 @@ import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
 object TestMain extends App {
+  // these params for shuffling input
+  val shuffle_elemsize = 9
+  val shuffle_nelems = 16
+
+  // these params after shuffling
   val nelems_src = 8
   val nelems_dst = 16
   val elemsize = 16
-  // val nelems_src = 16
-  // val nelems_dst = 28
-  // val elemsize = 9
 
   // component target list.
   val targetlist = List(
-    "header",  "selector",  "squeeze",  "stbuf", "comp"
+    "shuffle", "header",  "selector",  "squeeze",  "stbuf", "comp"
   )
 
   val a = if (args.length > 0) args(0) else "comp"
@@ -72,6 +74,14 @@ object TestMain extends App {
           chisel3.Driver.execute(args, () => new Squeeze(nelems_src, elemsize) )
         case _ =>
           iotesters.Driver.execute(args, () => new Squeeze(nelems_src, elemsize) )  { c => new SqueezeUnitTester(c) }
+      }
+
+    case "shuffle" =>
+      mode match {
+        case "verilog" =>
+          chisel3.Driver.execute(args, () =>   new BitShufflePerChannel(shuffle_nelems, shuffle_elemsize))
+        case _ =>
+          iotesters.Driver.execute(args, () => new BitShufflePerChannel(shuffle_nelems, shuffle_elemsize))  { c => new BitShufflePerChannelUnitTester(c) }
       }
 
     case _ =>

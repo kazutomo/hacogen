@@ -18,7 +18,7 @@ all:
 	@echo "To test invididual module"
 	@echo "$ make test T=$target"
 	@echo ""
-	@echo "target list: header, selector, squeeze, stbuf"
+	@echo "target list: header, selector, squeeze, stbuf, shuffle"
 	@echo ""
 
 
