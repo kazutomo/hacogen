@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage // png
 // local claases
 import rawimagetool._
 import localutil.Util._
+import refcomp.RefComp._
 
 class AppParams {
   def usage() {
@@ -46,8 +47,8 @@ class AppParams {
   var xoff = 0
   var yoff = 0
   // compressor params. non-adjustable for now
-  var npxbits = 9      // 9 bits per pixels
-  val yd = 16  // the size input to the encoder
+  var npxbits = 9  // 9 bits per pixels
+  val ninpxs = 16  // the input size to encoders, which is # of elements
 
   type AppOpts = Map[String, String]
 
@@ -139,7 +140,7 @@ object EstimatorMain extends App {
   val in = new FileInputStream(ap.filename)
   val rawimg = new RawImageTool(ap.width, ap.height)
 
-  val nshifts = (ap.height/ap.yd) * ap.width
+  val nshifts = (ap.height/ap.ninpxs) * ap.width
 
   val st = System.nanoTime()
 
@@ -198,10 +199,10 @@ object EstimatorMain extends App {
         if(dumptext) {
           val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
           println(s"Writing $vsfn")
-          rawimg.writeData2Text(vsfn, vs)
+          writeList2File(vsfn, vs)
         }
-        val rl = rawimg.runlengthEncoding(vs)
-        val zs = rawimg.zsEncoding(vs, npxblock, 2)
+        val rl = runlengthEncoding(vs)
+        val zs = zsEncoding(vs, npxblock, 2)
         val rlcr = vs.length.toFloat/rl.length
         val zscr = vs.length.toFloat/zs.length
         rlcrs += rlcr
@@ -210,15 +211,15 @@ object EstimatorMain extends App {
         //println(s"RL: ${rl.length} => ${rlcr}x")
         //println(s"ZS: ${zs.length} => ${zscr}x")
 
-        val vsbs = rawimg.bitshuffleVerticalLineSample(vs, npxblock, bitspx)
+        val vsbs = bitshuffleVerticalLineSample(vs, npxblock, bitspx)
         val vsbsfn = f"vsample-${bitspx}bitshuffle${npxblock}-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
-        val zs2 = rawimg.zsEncoding(vsbs, npxblock, 1)
+        val zs2 = zsEncoding(vsbs, npxblock, 1)
         val zs2cr = (vs.length.toFloat/npxblock*bitspx) /zs2.length
         zs2crs += zs2cr
         //println(s"ZSS: ${zs2.length} => ${zs2cr}x")
         if(dumptext) {
           println(s"Writing $vsbsfn")
-          rawimg.writeData2Text(vsbsfn, vsbs)
+          writeList2File(vsbsfn, vsbs)
         }
       }
 
@@ -232,14 +233,14 @@ object EstimatorMain extends App {
     // enclens is created for each frames
     var enclens = new ListBuffer[Int]()
 
-    val hyd = ap.height - (ap.height % ap.yd) // to simplify, ignore the remaining
+    val hyd = ap.height - (ap.height % ap.ninpxs) // to simplify, ignore the remaining
 
     // chunk up to rows whose height is yd
-    for (yoff <- 0 until hyd by ap.yd) {
+    for (yoff <- 0 until hyd by ap.ninpxs) {
       // emulate pixel shift
       for (xoff <- 0 until ap.width) {
         // create a column chunk, which is an input to the compressor
-        val dtmp = List.tabulate(ap.yd)(
+        val dtmp = List.tabulate(ap.ninpxs)(
           rno =>
           rawimg.getpx(xoff, rno + yoff))
 
@@ -255,17 +256,17 @@ object EstimatorMain extends App {
 
       if (noutpixs == 0) {
         for (l <- enclens) {
-          tmp_ratios += (ap.yd.toFloat / l.toFloat)
+          tmp_ratios += (ap.ninpxs.toFloat / l.toFloat)
         }
       } else {
         for (l <- enclens) {
           if (npxs_used + l < noutpixs) {
             npxs_used += l
-            input_cnt += ap.yd
+            input_cnt += ap.ninpxs
           } else {
             tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
             npxs_used = l
-            input_cnt = ap.yd
+            input_cnt = ap.ninpxs
           }
         }
         tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)

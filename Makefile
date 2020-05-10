@@ -54,9 +54,14 @@ classes/localutil/Localutils.class: Localutils.scala
 	@mkdir -p classes
 	fsc -d classes $<
 
+classes/refcomp/RefComp.class: RefComp.scala
+	@mkdir -p classes
+	fsc -d classes $<
+
 EstimatorClasses=\
 classes/rawimagetool/RawImageTool.class \
 classes/localutil/Localutils.class \
+classes/refcomp/RefComp.class \
 classes/EstimatorMain.class
 
 Estimator: $(EstimatorClasses)

@@ -1,5 +1,7 @@
 package localutil
 
+import java.io._
+
 object Util {
   def printmemoryusage : Unit = {
     val r = Runtime.getRuntime
@@ -19,5 +21,17 @@ object Util {
     val maxv = l.reduce((a,b) => (a max b))
     val minv = l.reduce((a,b) => (a min b))
     println(f"$label%-10s :  mean=$mean%.3f std=$std%.3f min=$minv%.3f max=$maxv%.3f")
+  }
+
+  def writeList2File(fn: String, data: List[Int]) {
+    try {
+      val f = new File(fn)
+      val out = new BufferedWriter(new FileWriter(f))
+      data.foreach{v => out.write(f"$v\n")}
+      out.close()
+    } catch {
+      case e: FileNotFoundException => println("Not found:" + fn)
+      case e: IOException => println("Failed to write")
+    }
   }
 }
