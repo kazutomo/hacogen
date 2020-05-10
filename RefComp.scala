@@ -121,7 +121,7 @@ object RefComp {
   // enclens : a list of encoded length
   // nbufpxs : the number of pixels of the output buffer
   // return the number of buffers used
-  def fillBuffer(enclens: List[Int], nbufpxs: Int):
+  def calcNBuffers(enclens: List[Int], nbufpxs: Int):
       Int = {
     var bufcnt = 0
     var nbufpxs_used = 0 // the number of buffer pixels used
@@ -135,6 +135,7 @@ object RefComp {
 
         // if not enough space, fill the next buffer
         if (nbufpxs_used + l > nbufpxs)  nbufpxs_used = l
+        else nbufpxs_used = 0
       }
     }
     // count a partially-filled buffer as one buffer
@@ -142,6 +143,4 @@ object RefComp {
 
     bufcnt
   }
-
-  // class CompRatioT(val mean: Float=0.0, val std: Float, val min: Float, val max: Float)
 }

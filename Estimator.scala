@@ -136,10 +136,6 @@ object EstimatorMain extends App {
   ap.getopts(args)
   ap.printinfo()
 
-  //
-  var allratios28 = new ListBuffer[Float]()
-  var allratios56 = new ListBuffer[Float]()
-  var allzeroratios = new ListBuffer[Float]()
 
   // open a dataset
   val in = new FileInputStream(ap.filename)
@@ -154,16 +150,8 @@ object EstimatorMain extends App {
   for (fno <- 0 until ap.fnostart) {
     rawimg.skipImage(in, ap.psize)
   }
-  for (fno <- ap.fnostart to ap.fnostop) {
-    if (ap.psize == 4) rawimg.readImageInt(in)
-    else if (ap.psize == 1) rawimg.readImageByte(in)
 
-    val zeroratio = rawimg.zerocnt.toFloat / (ap.width*ap.height).toFloat
-    allzeroratios += zeroratio
-
-    val maxval = rawimg.maxval
-    println(f"$fno%04d: zeroratio=$zeroratio%.3f maxval=$maxval")
-
+  def optionalprocessing(fno: Int) {
     // write back to file.
     // To display an image, display -size $Wx$H -depth 16  imagefile
     if(ap.dump_gray)  {
@@ -187,8 +175,24 @@ object EstimatorMain extends App {
       val vs = rawimg.getVerticalLineSample(ap.vsamplexpos, 0, ap.height)
       sys.exit(0)
     }
+  }
 
 
+  val hyd = ap.height - (ap.height % ap.ninpxs) // to simplify, ignore the remaining
+  val total_inpxs = ap.width * hyd
+  val total_shuffled_inpxs = ap.width * (hyd/ap.ninpxs*ap.bitspx)
+
+  // per-frame stats
+  var allzeroratios = new ListBuffer[Float]()
+  // var allratios28 = new ListBuffer[Float]()
+  // var allratios56 = new ListBuffer[Float]()
+
+  // per frame compression ratio
+  var cr_rl = new ListBuffer[Int]()
+
+
+  def analyzeframe() {
+    // per-frame stats
     // enclens is created for each encode scheme
     // rl   : N-input run-length
     // zs   : N-input zero suppression
@@ -197,9 +201,6 @@ object EstimatorMain extends App {
     var enclens_zs   = new ListBuffer[Int]()
     var enclens_shzs = new ListBuffer[Int]()
 
-    val hyd = ap.height - (ap.height % ap.ninpxs) // to simplify, ignore the remaining
-    val total_inpxs = ap.width * hyd
-    val total_shuffled_inpxs = ap.width * (hyd/ap.ninpxs*ap.bitspx)
 
     // chunk up to rows whose height is ap.ninpxs
     for (yoff <- 0 until hyd by ap.ninpxs) {
@@ -217,9 +218,12 @@ object EstimatorMain extends App {
       }
     }
 
+
+
     val nrl = enclens_rl reduce(_+_)
     val nzs = enclens_zs reduce(_+_)
     val nshzs = enclens_shzs reduce(_+_)
+
 
     val ti = total_inpxs.toFloat
     val tsi = total_shuffled_inpxs.toFloat
@@ -228,10 +232,40 @@ object EstimatorMain extends App {
     printstats("ZS", enclens_zs.toList.map(_.toFloat) )
     printstats("SHZS", enclens_shzs.toList.map(_.toFloat) )
 
-
     println(f"RL  : ${total_inpxs}/${nrl} => ${ti/nrl}")
     println(f"ZS  : ${total_inpxs}/${nzs} => ${ti/nzs}")
     println(f"SHZS: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
+
+    val b28nrl = calcNBuffers(enclens_rl.toList, 28) * 28
+    val b28nzs = calcNBuffers(enclens_zs.toList, 28) * 28
+    val b28nshzs = calcNBuffers(enclens_shzs.toList, 28) * 28
+    val b56nrl = calcNBuffers(enclens_rl.toList, 56) * 56
+    val b56nzs = calcNBuffers(enclens_zs.toList, 56) * 56
+    val b56nshzs = calcNBuffers(enclens_shzs.toList, 56) * 56
+
+    println(f"B28RL  : ${total_inpxs}/${b28nrl} => ${ti/b28nrl}")
+    println(f"B28ZS  : ${total_inpxs}/${b28nzs} => ${ti/b28nzs}")
+    println(f"B28SHZS: ${total_shuffled_inpxs}/${b28nshzs} => ${tsi/b28nshzs}")
+    println(f"B56RL  : ${total_inpxs}/${b56nrl} => ${ti/b56nrl}")
+    println(f"B56ZS  : ${total_inpxs}/${b56nzs} => ${ti/b56nzs}")
+    println(f"B56SHZS: ${total_shuffled_inpxs}/${b56nshzs} => ${tsi/b56nshzs}")
+  }
+
+
+  for (fno <- ap.fnostart to ap.fnostop) {
+
+    if (ap.psize == 4) rawimg.readImageInt(in)
+    else if (ap.psize == 1) rawimg.readImageByte(in)
+
+    optionalprocessing(fno)
+
+    val zeroratio = rawimg.zerocnt.toFloat / (ap.width*ap.height).toFloat
+    allzeroratios += zeroratio
+
+    val maxval = rawimg.maxval
+    println(f"$fno%04d: zeroratio=$zeroratio%.3f maxval=$maxval")
+
+    analyzeframe()
   }
 
   val et = System.nanoTime()

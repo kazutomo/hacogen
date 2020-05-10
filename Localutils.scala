@@ -15,12 +15,20 @@ object Util {
     math.sqrt( (sq.sum / x.size).toDouble ).toFloat
   }
 
-  def printstats(label: String, l: List[Float]) {
+  class StatT(val mean: Float=0.0.toFloat, val std: Float, val min: Float, val max: Float)
+
+  def calcStats(l: List[Float]) : StatT = {
     val mean = l.sum / l.size
     val std  = stddev(l)
-    val maxv = l.reduce((a,b) => (a max b))
     val minv = l.reduce((a,b) => (a min b))
-    println(f"$label%-10s :  mean=$mean%.3f std=$std%.3f min=$minv%.3f max=$maxv%.3f")
+    val maxv = l.reduce((a,b) => (a max b))
+
+    new StatT(mean, std, minv, maxv)
+  }
+
+  def printstats(label: String, l: List[Float]) {
+    val st = calcStats(l)
+    println(f"$label%-10s :  mean=${st.mean}%.3f std=${st.std}%.3f min=${st.min}%.3f max=${st.max}%.3f")
   }
 
   def writeList2File(fn: String, data: List[Int]) {
