@@ -178,7 +178,7 @@ object EstimatorMain extends App {
     }
 
 
-    // enclens is created for each encoding scheme
+    // enclens is created for each encode scheme
     // rl   : N-input run-length
     // zs   : N-input zero suppression
     // shzs : shuffled N-input zero suppression
@@ -201,9 +201,9 @@ object EstimatorMain extends App {
           rawimg.getpx(xoff, rno + yoff))
 
         // only check the number of pixel output
-        enclens_rl   += rlEncoding(indata).length
-        enclens_zs   += zsEncoding(indata, ap.bitspx).length
-        enclens_shzs += shzsEncoding(indata, ap.bitspx).length
+        enclens_rl   += rlEncode(indata).length
+        enclens_zs   += zsEncode(indata, ap.bitspx).length
+        enclens_shzs += shzsEncode(indata, ap.bitspx).length
       }
     }
 
@@ -214,9 +214,14 @@ object EstimatorMain extends App {
     val ti = total_inpxs.toFloat
     val tsi = total_shuffled_inpxs.toFloat
 
+    printstats("RL", enclens_rl.toList.map(_.toFloat) )
+    printstats("ZS", enclens_zs.toList.map(_.toFloat) )
+    printstats("SHZS", enclens_shzs.toList.map(_.toFloat) )
+
+
     println(f"RL  : ${total_inpxs}/${nrl} => ${ti/nrl}")
-    println(f"SZ  : ${total_inpxs}/${nzs} => ${ti/nzs}")
-    println(f"SHSZ: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
+    println(f"ZS  : ${total_inpxs}/${nzs} => ${ti/nzs}")
+    println(f"SHZS: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
   }
 
   val et = System.nanoTime()

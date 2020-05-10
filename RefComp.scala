@@ -9,8 +9,8 @@ object RefComp {
     data.map(v => if(v < maxval) v else maxval)
   }
 
-  // a simple runlength encoding
-  def rlEncoding(data: List[Int]) : List[Int] = {
+  // a simple run-length encoding
+  def rlEncode(data: List[Int]) : List[Int] = {
     var curval = -1
     var cnt = 0
     var res = ListBuffer[Int]()
@@ -33,21 +33,46 @@ object RefComp {
     res.toList
   }
 
-  // zero-suppression encoding
-  def zsEncoding(px: List[Int], bitspx: Int) : List[Int] = {
-    val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
+  def RLDecode(data: List[Int]) : List[Int] = {
+    var res = ListBuffer[Int]()
+
+    for(e <- data.sliding(2,2))
+      for(t <- List.fill(e(0))(e(1))) res += t
+
+    res.toList
+  }
+
+  // zero-suppression encode
+  def zsEncode(px: List[Int], bitspx: Int) : List[Int] = {
     val ninpxs = px.length
     val nheaders = math.ceil(ninpxs.toDouble/bitspx.toDouble).toInt
-    val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
-    val headers = List.fill(nheaders)(header) // faking, but ok, only count the number of encoded data
+    val metadatabits = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<(i%bitspx))
+    val metadatapxs = metadatabits.sliding(bitspx, bitspx).toList
+    val headers = metadatapxs.map(v => v.reduce(_|_))
+
+    // headers foreach {v => println(v.toBinaryString)}
+
     val nonzero = px.filter(x => x > 0)
     return headers ::: nonzero
   }
 
-  // Assume that pxs.length is npxblock and each px is bitspx bits
-  // The length of a returned list is bitspx and each px is npxblock bits
-  // pin_i_j => pout_j_i, where i is i-the element in list and j is j-th bit of the element. it resembles a matrix transpose operation.
-  // also note that this is a reversible operation.
+  def zsDecode(px: List[Int], bitspx: Int, ninpxs: Int) : List[Int] = {
+    var res = ListBuffer[Int]()
+    val nheaders = math.ceil(ninpxs.toDouble/bitspx.toDouble).toInt
+    var dpos = nheaders
+    for (i <- 0 until ninpxs) {
+      val hpos = i/bitspx
+      val mask = 1<<(i%bitspx)
+      if( (px(hpos) & mask) > 0 ) {
+        res += px(dpos)
+        dpos += 1
+      } else {
+        res += 0
+      }
+    }
+    res.toList
+  }
+
   def bitShuffle(pxs: List[Int], bitspx: Int) : List[Int] = {
     val npxblock = pxs.length
     val inp = pxs.toArray
@@ -61,9 +86,20 @@ object RefComp {
   }
 
   // shuffled zs
-  def shzsEncoding(px: List[Int], bitspx: Int) : List[Int] = {
+  def shzsEncode(px: List[Int], bitspx: Int) : List[Int] = {
     val bs = bitShuffle(px, bitspx)
-    zsEncoding(bs, bitspx)
+    zsEncode(bs, bitspx)
+  }
+
+  def compareTwoLists(a: List[Int], b: List[Int]) : Boolean = {
+    if (a.length != b.length) return false
+
+    for( (aa,bb) <- a zip b) {
+      if (aa != bb) {
+        return false
+      }
+    }
+    true
   }
 
   // unused
