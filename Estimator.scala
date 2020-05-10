@@ -27,6 +27,9 @@ class AppParams {
     println("-png: dump png images.")
     println("-pngregion: dump png images.")
     println("-vsample xpos : dump vertical sample at xpos (default width/2)")
+    println("* compressor configs")
+    println("-ninpxs int : the number of input pixels")
+    println("-nbufpxs int : the number of output buffer pixels")
     println("")
   }
 
@@ -48,8 +51,8 @@ class AppParams {
   var xoff = 0
   var yoff = 0
   // compressor params. non-adjustable for now
-  var npxbits = 9  // 9 bits per pixels
-  val ninpxs = 16  // the input size to encoders, which is # of elements
+  var ninpxs = 16  // the input size to encoders, which is # of elements
+  var nbufpxs = 28
 
   type AppOpts = Map[String, String]
 
@@ -69,6 +72,8 @@ class AppParams {
       case "-fnostop" :: istr :: tail => nextopts(tail, m ++ Map("fnostop" -> istr ))
       case "-xoff" :: istr :: tail => nextopts(tail, m ++ Map("xoff" -> istr ))
       case "-yoff" :: istr :: tail => nextopts(tail, m ++ Map("yoff" -> istr ))
+      case "-ninpxs" :: istr :: tail => nextopts(tail, m ++ Map("ninpxs" -> istr ))
+      case "-nbufpxs" :: istr :: tail => nextopts(tail, m ++ Map("nbufpxs" -> istr ))
       case str :: Nil => m ++ Map("filename" -> str)
       case unknown => {
         println("Unknown: " + unknown)
@@ -91,13 +96,16 @@ class AppParams {
     width = getIntVal(m, "width")
     height = getIntVal(m, "height")
     psize = getIntVal(m, "psize")
-    // fix the followings later!. not elegant
+
+    // the following lines need to be fixed. not elegant...
     if (m contains "fnostart") fnostart = getIntVal(m, "fnostart")
     if (m contains "fnostop")  fnostop = getIntVal(m, "fnostop")
-    if (m contains "xoff") xoff = getIntVal(m, "xoff")
-    if (m contains "yoff") yoff = getIntVal(m, "yoff")
-    if (m contains "gray") dump_gray = getBoolVal(m, "gray")
-    if (m contains "png") dump_png = getBoolVal(m, "png")
+    if (m contains "xoff")     xoff = getIntVal(m, "xoff")
+    if (m contains "yoff")     yoff = getIntVal(m, "yoff")
+    if (m contains "ninpxs")   ninpxs = getIntVal(m, "ninpxs")
+    if (m contains "nbufpxs")  nbufpxs = getIntVal(m, "nbufpxs")
+    if (m contains "gray")     dump_gray = getBoolVal(m, "gray")
+    if (m contains "png")      dump_png = getBoolVal(m, "png")
     if (m contains "pngregion")   dump_pngregion = getBoolVal(m, "pngregion")
 
     m.get("vsample") match {
@@ -113,6 +121,9 @@ class AppParams {
     println("height:  " + height)
     println("size:    " + psize)
     println(s"offset:  x=$xoff, y=$yoff")
+    println("")
+    println("ninpxs:  " + ninpxs)
+    println("nbufpxs: " + nbufpxs)
     println("")
   }
 }
@@ -191,8 +202,7 @@ object EstimatorMain extends App {
     val total_shuffled_inpxs = ap.width * (hyd/ap.ninpxs*ap.bitspx)
 
     // chunk up to rows whose height is ap.ninpxs
-    //for (yoff <- 0 until hyd by ap.ninpxs) {
-    for (yoff <- 0 until ap.ninpxs) {
+    for (yoff <- 0 until hyd by ap.ninpxs) {
       // each column shift (every cycle in HW)
       for (xoff <- 0 until ap.width) {
         // create a column chunk, which is an input to the compressor
