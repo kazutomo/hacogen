@@ -10,4 +10,9 @@ done
 echo ""
 echo ""
 echo "------------------------"
-grep FAIL $LOGFN
+if grep FAIL $LOGFN ; then
+    echo "FAILED!!!"
+    echo "Check $LOGFN"
+else
+    echo "Done"
+fi

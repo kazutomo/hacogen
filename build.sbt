@@ -33,6 +33,8 @@ version := "0.1.0"
 
 name := "hacogen"
 
+// mainClass in (Compile, run) := Some("hacogen.TestMain")
+
 scalaVersion := "2.11.12"
 
 crossScalaVersions := Seq("2.11.12", "2.12.4")

@@ -23,21 +23,24 @@ all:
 
 
 v verilog:
-	sbt "test:runMain hacogen.TestMain $T:verilog"
+	sbt "test:runMain hacogen.HacoGen $T:verilog"
 
 t test:
-	sbt "test:runMain hacogen.TestMain $T"
+	sbt "test:runMain hacogen.HacoGen $T"
 
 s simulate:
-	sbt "test:runMain hacogen.TestMain $T --backend-name verilator"
+	sbt "test:runMain hacogen.HacoGen $T --backend-name verilator"
 
 l list:
 	@echo "Available targets: header, selector, squeeze, stbuf"
-#	sbt "test:runMain hacogen.TestMain list"
+#	sbt "test:runMain hacogen.HacoGen list"
 
 h help:
-	sbt "test:runMain hacogen.TestMain --help"
+	sbt "test:runMain hacogen.HacoGen --help"
 
+#
+# utility
+#
 
 classes/EstimatorMain.class: Estimator.scala
 	@mkdir -p classes

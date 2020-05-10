@@ -8,7 +8,7 @@ package hacogen
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
-object TestMain extends App {
+object HacoGen extends App {
   // these params for shuffling input
   val shuffle_elemsize = 9
   val shuffle_nelems = 16
