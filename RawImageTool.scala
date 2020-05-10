@@ -7,7 +7,6 @@ import scala.collection.mutable.ListBuffer
 import javax.imageio.ImageIO // png
 import java.awt.image.BufferedImage // png
 
-
 // A class for manipulating a simple raw image data set that does not
 // include metadata information such as width, height, pixel data
 // type, the number of image, etc. This class provides methods that

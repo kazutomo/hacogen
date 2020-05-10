@@ -41,6 +41,7 @@ class AppParams {
   var dump_pngregion = false
   var dump_vsample = false
   var vsamplexpos = 0
+  var bitspx = 9
   // NOTE: assume width and height >= 256. for now, fixed
   val window_width  = 256
   val window_height = 256
@@ -118,13 +119,6 @@ class AppParams {
 
 object EstimatorMain extends App {
 
-  // software-based encoding for validation
-  def encoding(px: List[Int]) : List[Int] = {
-    val headerlist = List.tabulate(px.length)(i => if (px(i) == 0) 0 else 1<<i)
-    val header = headerlist.reduce(_ + _) // | (1 << (c.elemsize-1))
-    val nonzero = px.filter(x => x > 0)
-    return List.tabulate(nonzero.length+1)(i => if(i==0) header else nonzero(i-1) )
-  }
 
   var ap = new AppParams()
 
@@ -149,7 +143,6 @@ object EstimatorMain extends App {
   for (fno <- 0 until ap.fnostart) {
     rawimg.skipImage(in, ap.psize)
   }
-
   for (fno <- ap.fnostart to ap.fnostop) {
     if (ap.psize == 4) rawimg.readImageInt(in)
     else if (ap.psize == 1) rawimg.readImageByte(in)
@@ -180,126 +173,53 @@ object EstimatorMain extends App {
     }
 
     if(ap.dump_vsample) {
-      val dumptext = false
-      val bitspx = 9
-      val npxblock = 16
-
-      // for compression ratio stats
-      var rlcrs = new ListBuffer[Float]()
-      var zscrs = new ListBuffer[Float]()
-      var zs2crs = new ListBuffer[Float]()
-
-      for (vsx <- ap.xoff until ap.xoff + ap.window_width) {
-        val vsy1 = ap.yoff
-        val vsy2 = ap.yoff + ap.window_height
-        val vs0 = rawimg.getVerticalLineSample(vsx, vsy1, vsy2)
-
-        //val vs = rawimg.clipSample(vs0, bitspx)
-        val vs = vs0
-        if(dumptext) {
-          val vsfn = f"vsample-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
-          println(s"Writing $vsfn")
-          writeList2File(vsfn, vs)
-        }
-        val rl = runlengthEncoding(vs)
-        val zs = zsEncoding(vs, npxblock, 2)
-        val rlcr = vs.length.toFloat/rl.length
-        val zscr = vs.length.toFloat/zs.length
-        rlcrs += rlcr
-        zscrs += zscr
-
-        //println(s"RL: ${rl.length} => ${rlcr}x")
-        //println(s"ZS: ${zs.length} => ${zscr}x")
-
-        val vsbs = bitshuffleVerticalLineSample(vs, npxblock, bitspx)
-        val vsbsfn = f"vsample-${bitspx}bitshuffle${npxblock}-x${vsx}y${vsy1}until${vsy2}-fr${fno}.txt"
-        val zs2 = zsEncoding(vsbs, npxblock, 1)
-        val zs2cr = (vs.length.toFloat/npxblock*bitspx) /zs2.length
-        zs2crs += zs2cr
-        //println(s"ZSS: ${zs2.length} => ${zs2cr}x")
-        if(dumptext) {
-          println(s"Writing $vsbsfn")
-          writeList2File(vsbsfn, vsbs)
-        }
-      }
-
-      printstats("RL ", rlcrs.toList)
-      printstats("ZS ", zscrs.toList)
-      printstats("ZS2", zs2crs.toList)
-
+      val vs = rawimg.getVerticalLineSample(ap.vsamplexpos, 0, ap.height)
       sys.exit(0)
     }
 
-    // enclens is created for each frames
-    var enclens = new ListBuffer[Int]()
+
+    // enclens is created for each encoding scheme
+    // rl   : N-input run-length
+    // zs   : N-input zero suppression
+    // shzs : shuffled N-input zero suppression
+    var enclens_rl   = new ListBuffer[Int]()
+    var enclens_zs   = new ListBuffer[Int]()
+    var enclens_shzs = new ListBuffer[Int]()
 
     val hyd = ap.height - (ap.height % ap.ninpxs) // to simplify, ignore the remaining
+    val total_inpxs = ap.width * hyd
+    val total_shuffled_inpxs = ap.width * (hyd/ap.ninpxs*ap.bitspx)
 
-    // chunk up to rows whose height is yd
-    for (yoff <- 0 until hyd by ap.ninpxs) {
-      // emulate pixel shift
+    // chunk up to rows whose height is ap.ninpxs
+    //for (yoff <- 0 until hyd by ap.ninpxs) {
+    for (yoff <- 0 until ap.ninpxs) {
+      // each column shift (every cycle in HW)
       for (xoff <- 0 until ap.width) {
         // create a column chunk, which is an input to the compressor
-        val dtmp = List.tabulate(ap.ninpxs)(
+        val indata = List.tabulate(ap.ninpxs)(
           rno =>
           rawimg.getpx(xoff, rno + yoff))
 
-        val enctmp = encoding(dtmp)
-        enclens += enctmp.length
+        // only check the number of pixel output
+        enclens_rl   += rlEncoding(indata).length
+        enclens_zs   += zsEncoding(indata, ap.bitspx).length
+        enclens_shzs += shzsEncoding(indata, ap.bitspx).length
       }
     }
 
-    def estimate_ratios(noutpixs: Int) : Float = {
-      var tmp_ratios = new ListBuffer[Float]()
-      var npxs_used = 0
-      var input_cnt = 0
+    val nrl = enclens_rl reduce(_+_)
+    val nzs = enclens_zs reduce(_+_)
+    val nshzs = enclens_shzs reduce(_+_)
 
-      if (noutpixs == 0) {
-        for (l <- enclens) {
-          tmp_ratios += (ap.ninpxs.toFloat / l.toFloat)
-        }
-      } else {
-        for (l <- enclens) {
-          if (npxs_used + l < noutpixs) {
-            npxs_used += l
-            input_cnt += ap.ninpxs
-          } else {
-            tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
-            npxs_used = l
-            input_cnt = ap.ninpxs
-          }
-        }
-        tmp_ratios += (input_cnt.toFloat / noutpixs.toFloat)
-      }
+    val ti = total_inpxs.toFloat
+    val tsi = total_shuffled_inpxs.toFloat
 
-      val rtmp = tmp_ratios.toList
-      if (rtmp.length < 1) return 0.0.toFloat
-
-      val rmean = (rtmp.reduce( (a,b) => (a + b) )) / rtmp.length.toFloat
-      val rmax = rtmp.reduce( (a,b) => (a max b) )
-      val rmin = rtmp.reduce( (a,b) => (a min b) )
-      var noncompressedcnt = 0
-      rtmp.foreach( e => if(e<1.0) noncompressedcnt += 1)
-      val ncperc = noncompressedcnt.toFloat * 100.0 / (ap.width*ap.height).toFloat
-
-      println(f"$fno%04d: mean=$rmean%.2f max=$rmax%.2f min=$rmin%.2f non=$noncompressedcnt/$nshifts ($noutpixs%2d I/O pixels)")
-
-      rmean
-    }
-    allratios28 += estimate_ratios(28)
-    allratios56 += estimate_ratios(56)
+    println(f"RL  : ${total_inpxs}/${nrl} => ${ti/nrl}")
+    println(f"SZ  : ${total_inpxs}/${nzs} => ${ti/nzs}")
+    println(f"SHSZ: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
   }
 
   val et = System.nanoTime()
   val psec = (et-st)*1e-9
-
-  println()
-  println("-" * 60)
-  printstats("zeroratio", allzeroratios.toList)
-  printstats("cr28",      allratios28.toList)
-  printstats("cr56",      allratios56.toList)
-  println("-" * 60)
-  println()
-
   println(f"Processing Time[Sec] = $psec%.3f")
 }
