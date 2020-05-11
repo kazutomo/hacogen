@@ -2,6 +2,7 @@ package refcomp
 
 import scala.collection.mutable.ListBuffer
 
+
 // software reference implementations of encoders, compression ratio estimator
 object RefComp {
   def clipSample(data: List[Int], bitspx: Int) : List[Int] = {
@@ -121,7 +122,7 @@ object RefComp {
   // enclens : a list of encoded length
   // nbufpxs : the number of pixels of the output buffer
   // return the number of buffers used
-  def calcNBuffers(enclens: List[Int], nbufpxs: Int):
+  def calcNBufferedPixels(enclens: List[Int], nbufpxs: Int):
       Int = {
     var bufcnt = 0
     var nbufpxs_used = 0 // the number of buffer pixels used
@@ -141,6 +142,6 @@ object RefComp {
     // count a partially-filled buffer as one buffer
     if (nbufpxs_used>0) bufcnt += 1
 
-    bufcnt
+    bufcnt * nbufpxs
   }
 }

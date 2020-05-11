@@ -26,7 +26,7 @@ object Util {
     new StatT(mean, std, minv, maxv)
   }
 
-  def printstats(label: String, l: List[Float]) {
+  def printStats(label: String, l: List[Float]) {
     val st = calcStats(l)
     println(f"$label%-10s :  mean=${st.mean}%.3f std=${st.std}%.3f min=${st.min}%.3f max=${st.max}%.3f")
   }

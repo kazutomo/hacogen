@@ -182,16 +182,9 @@ object EstimatorMain extends App {
   val total_inpxs = ap.width * hyd
   val total_shuffled_inpxs = ap.width * (hyd/ap.ninpxs*ap.bitspx)
 
-  // per-frame stats
-  var allzeroratios = new ListBuffer[Float]()
-  // var allratios28 = new ListBuffer[Float]()
-  // var allratios56 = new ListBuffer[Float]()
-
-  // per frame compression ratio
-  var cr_rl = new ListBuffer[Int]()
 
 
-  def analyzeframe() {
+  def analyzeframe() : Map[String, Float] = {
     // per-frame stats
     // enclens is created for each encode scheme
     // rl   : N-input run-length
@@ -200,7 +193,6 @@ object EstimatorMain extends App {
     var enclens_rl   = new ListBuffer[Int]()
     var enclens_zs   = new ListBuffer[Int]()
     var enclens_shzs = new ListBuffer[Int]()
-
 
     // chunk up to rows whose height is ap.ninpxs
     for (yoff <- 0 until hyd by ap.ninpxs) {
@@ -218,57 +210,120 @@ object EstimatorMain extends App {
       }
     }
 
-
-
     val nrl = enclens_rl reduce(_+_)
     val nzs = enclens_zs reduce(_+_)
     val nshzs = enclens_shzs reduce(_+_)
 
-
     val ti = total_inpxs.toFloat
     val tsi = total_shuffled_inpxs.toFloat
 
-    printstats("RL", enclens_rl.toList.map(_.toFloat) )
-    printstats("ZS", enclens_zs.toList.map(_.toFloat) )
-    printstats("SHZS", enclens_shzs.toList.map(_.toFloat) )
+    if (false) {
+      printStats("RL", enclens_rl.toList.map(_.toFloat) )
+      printStats("ZS", enclens_zs.toList.map(_.toFloat) )
+      printStats("SHZS", enclens_shzs.toList.map(_.toFloat) )
+      println(f"RL  : ${total_inpxs}/${nrl} => ${ti/nrl}")
+      println(f"ZS  : ${total_inpxs}/${nzs} => ${ti/nzs}")
+      println(f"SHZS: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
+    }
 
-    println(f"RL  : ${total_inpxs}/${nrl} => ${ti/nrl}")
-    println(f"ZS  : ${total_inpxs}/${nzs} => ${ti/nzs}")
-    println(f"SHZS: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
+    // fix this hard-coded values later
+    //val b256nrl = calcNBufferedPixels(enclens_rl.toList, 28)
+    val b256nzs = calcNBufferedPixels(enclens_zs.toList, 28)
+    val b256nshzs = calcNBufferedPixels(enclens_shzs.toList, 16)
+    //val b512nrl = calcNBufferedPixels(enclens_rl.toList, 56)
+    val b512nzs = calcNBufferedPixels(enclens_zs.toList, 56)
+    val b512nshzs = calcNBufferedPixels(enclens_shzs.toList, 32)
 
-    val b28nrl = calcNBuffers(enclens_rl.toList, 28) * 28
-    val b28nzs = calcNBuffers(enclens_zs.toList, 28) * 28
-    val b28nshzs = calcNBuffers(enclens_shzs.toList, 28) * 28
-    val b56nrl = calcNBuffers(enclens_rl.toList, 56) * 56
-    val b56nzs = calcNBuffers(enclens_zs.toList, 56) * 56
-    val b56nshzs = calcNBuffers(enclens_shzs.toList, 56) * 56
+    if (false) {
+      //println(f"B256RL  : ${total_inpxs}/${b256nrl} => ${ti/b256nrl}")
+      println(f"B256ZS  : ${total_inpxs}/${b256nzs} => ${ti/b256nzs}")
+      println(f"B256SHZS: ${total_shuffled_inpxs}/${b256nshzs} => ${tsi/b256nshzs}")
+      //println(f"B512RL  : ${total_inpxs}/${b512nrl} => ${ti/b512nrl}")
+      println(f"B512ZS  : ${total_inpxs}/${b512nzs} => ${ti/b512nzs}")
+      println(f"B512SHZS: ${total_shuffled_inpxs}/${b512nshzs} => ${tsi/b512nshzs}")
+    }
 
-    println(f"B28RL  : ${total_inpxs}/${b28nrl} => ${ti/b28nrl}")
-    println(f"B28ZS  : ${total_inpxs}/${b28nzs} => ${ti/b28nzs}")
-    println(f"B28SHZS: ${total_shuffled_inpxs}/${b28nshzs} => ${tsi/b28nshzs}")
-    println(f"B56RL  : ${total_inpxs}/${b56nrl} => ${ti/b56nrl}")
-    println(f"B56ZS  : ${total_inpxs}/${b56nzs} => ${ti/b56nzs}")
-    println(f"B56SHZS: ${total_shuffled_inpxs}/${b56nshzs} => ${tsi/b56nshzs}")
+    Map(
+      "RL" -> ti/nrl, "ZS" -> ti/nzs, "SHZS" -> tsi/nshzs,
+      "ZS256" -> ti/b256nzs, "SHZS256" -> tsi/b256nshzs,
+      "ZS512" -> ti/b512nzs, "SHZS512" -> tsi/b512nshzs)
   }
+  // "RL256" -> ti/b256nrl, "RL512" -> ti/b512nrl,
 
+  // stats for entire dataset
+  var allzeroratios = new ListBuffer[Float]()
+  var allRLs = new ListBuffer[Float]()
+  var allZSs = new ListBuffer[Float]()
+  var allSHZSs = new ListBuffer[Float]()
+  //var allRL256s = new ListBuffer[Float]()
+  var allZS256s = new ListBuffer[Float]()
+  var allSHZS256s = new ListBuffer[Float]()
+  //var allRL512s = new ListBuffer[Float]()
+  var allZS512s = new ListBuffer[Float]()
+  var allSHZS512s = new ListBuffer[Float]()
+
+  // per frame compression ratio
+  var cr_rl = new ListBuffer[Int]()
+  var maxzeroratio = 0.0.toFloat
+  var minzeroratio = 1.0.toFloat
+  var fno_maxzeroratio = 0 // skip 1.0 zeroratio frame
+  var fno_minzeroratio = 0
 
   for (fno <- ap.fnostart to ap.fnostop) {
-
     if (ap.psize == 4) rawimg.readImageInt(in)
     else if (ap.psize == 1) rawimg.readImageByte(in)
 
     optionalprocessing(fno)
 
     val zeroratio = rawimg.zerocnt.toFloat / (ap.width*ap.height).toFloat
-    allzeroratios += zeroratio
+    if (zeroratio < 1.0.toFloat) {
+      allzeroratios += zeroratio
 
-    val maxval = rawimg.maxval
-    println(f"$fno%04d: zeroratio=$zeroratio%.3f maxval=$maxval")
+      if (zeroratio > maxzeroratio) {
+        fno_maxzeroratio = fno
+        maxzeroratio = zeroratio
+      }
+      if (zeroratio < minzeroratio) {
+        fno_minzeroratio = fno
+        minzeroratio = zeroratio
+      }
+      val maxval = rawimg.maxval
+      println(f"$fno%04d: zeroratio=$zeroratio%.3f maxval=$maxval")
+      val crmap = analyzeframe()
 
-    analyzeframe()
+      allRLs += crmap("RL")
+      allZSs += crmap("ZS")
+      allSHZSs += crmap("SHZS")
+      //allRL256s += crmap("RL256")
+      allZS256s += crmap("ZS256")
+      allSHZS256s += crmap("SHZS256")
+      //allRL512s += crmap("RL512")
+      allZS512s += crmap("ZS512")
+      allSHZS512s += crmap("SHZS512")
+    } else
+      println(f"skip fno${fno} because all pixels are zero")
   }
-
   val et = System.nanoTime()
   val psec = (et-st)*1e-9
-  println(f"Processing Time[Sec] = $psec%.3f")
+
+  println()
+  printStats("RL",   allRLs.toList)
+  printStats("ZS",   allZSs.toList)
+  printStats("SHZS", allSHZSs.toList)
+  println()
+  //printStats("RL256",   allRL256s.toList)
+  printStats("ZS256",   allZS256s.toList)
+  printStats("SHZS256", allSHZS256s.toList)
+  println()
+  //printStats("RL512",   allRL512s.toList)
+  printStats("ZS512",   allZS512s.toList)
+  printStats("SHZS512", allSHZS512s.toList)
+  println()
+  println(f"maxzeroratio=$maxzeroratio @ $fno_maxzeroratio")
+  println(f"minzeroratio=$minzeroratio @ $fno_minzeroratio")
+
+  println()
+  println()
+  val nframes = ap.fnostop - ap.fnostart + 1
+  println(f"Processing Time[Sec] = $psec%.3f total / ${psec/nframes.toFloat}%.3f per frame")
 }
