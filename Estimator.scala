@@ -205,13 +205,17 @@ object EstimatorMain extends App {
         // only check the number of pixel output
         enclens_rl   += rlEncode(indata).length
         enclens_zs   += zsEncode(indata, ap.bitspx).length
-        enclens_shzs += shzsEncode(indata, ap.bitspx).length
+        if (ap.ninpxs > ap.bitspx)
+          enclens_shzs += shzsEncode(indata, ap.bitspx).length
       }
     }
 
     val nrl = enclens_rl reduce(_+_)
     val nzs = enclens_zs reduce(_+_)
-    val nshzs = enclens_shzs reduce(_+_)
+
+    val nshzs =
+      if (ap.ninpxs > ap.bitspx) enclens_shzs reduce(_+_)
+      else 1
 
     val ti = total_inpxs.toFloat
     val tsi = total_shuffled_inpxs.toFloat
@@ -219,45 +223,56 @@ object EstimatorMain extends App {
     if (false) {
       printStats("RL", enclens_rl.toList.map(_.toFloat) )
       printStats("ZS", enclens_zs.toList.map(_.toFloat) )
-      printStats("SHZS", enclens_shzs.toList.map(_.toFloat) )
+      if (ap.ninpxs > ap.bitspx)
+        printStats("SHZS", enclens_shzs.toList.map(_.toFloat) )
       println(f"RL  : ${total_inpxs}/${nrl} => ${ti/nrl}")
       println(f"ZS  : ${total_inpxs}/${nzs} => ${ti/nzs}")
-      println(f"SHZS: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
+      if (ap.ninpxs > ap.bitspx)
+        println(f"SHZS: ${total_shuffled_inpxs}/${nshzs} => ${tsi/nshzs}")
     }
 
     // fix this hard-coded values later
-    //val b256nrl = calcNBufferedPixels(enclens_rl.toList, 28)
     val b256nzs = calcNBufferedPixels(enclens_zs.toList, 28)
-    val b256nshzs = calcNBufferedPixels(enclens_shzs.toList, 16)
-    //val b512nrl = calcNBufferedPixels(enclens_rl.toList, 56)
+    val b256nshzs =
+      if (ap.ninpxs > ap.bitspx)  calcNBufferedPixels(enclens_shzs.toList, 16)
+      else 1
     val b512nzs = calcNBufferedPixels(enclens_zs.toList, 56)
-    val b512nshzs = calcNBufferedPixels(enclens_shzs.toList, 32)
+    val b512nshzs =
+      if (ap.ninpxs > ap.bitspx) calcNBufferedPixels(enclens_shzs.toList, 32)
+      else 1
 
     if (false) {
       //println(f"B256RL  : ${total_inpxs}/${b256nrl} => ${ti/b256nrl}")
       println(f"B256ZS  : ${total_inpxs}/${b256nzs} => ${ti/b256nzs}")
-      println(f"B256SHZS: ${total_shuffled_inpxs}/${b256nshzs} => ${tsi/b256nshzs}")
+      if (ap.ninpxs > ap.bitspx)
+        println(f"B256SHZS: ${total_shuffled_inpxs}/${b256nshzs} => ${tsi/b256nshzs}")
       //println(f"B512RL  : ${total_inpxs}/${b512nrl} => ${ti/b512nrl}")
       println(f"B512ZS  : ${total_inpxs}/${b512nzs} => ${ti/b512nzs}")
-      println(f"B512SHZS: ${total_shuffled_inpxs}/${b512nshzs} => ${tsi/b512nshzs}")
+      if (ap.ninpxs > ap.bitspx)
+        println(f"B512SHZS: ${total_shuffled_inpxs}/${b512nshzs} => ${tsi/b512nshzs}")
     }
 
-    Map(
-      "RL" -> ti/nrl, "ZS" -> ti/nzs, "SHZS" -> tsi/nshzs,
-      "ZS256" -> ti/b256nzs, "SHZS256" -> tsi/b256nshzs,
-      "ZS512" -> ti/b512nzs, "SHZS512" -> tsi/b512nshzs)
+    val ret = Map(
+      "RL" -> ti/nrl,
+      "ZS" -> ti/nzs, "ZS256" -> ti/b256nzs,  "ZS512" -> ti/b512nzs
+    )
+
+    if (ap.ninpxs > ap.bitspx)
+      ret ++ Map("SHZS" -> tsi/nshzs,
+        "SHZS256" -> tsi/b256nshzs,
+        "SHZS512" -> tsi/b512nshzs)
+    else
+      ret
   }
-  // "RL256" -> ti/b256nrl, "RL512" -> ti/b512nrl,
+
 
   // stats for entire dataset
   var allzeroratios = new ListBuffer[Float]()
   var allRLs = new ListBuffer[Float]()
   var allZSs = new ListBuffer[Float]()
   var allSHZSs = new ListBuffer[Float]()
-  //var allRL256s = new ListBuffer[Float]()
   var allZS256s = new ListBuffer[Float]()
   var allSHZS256s = new ListBuffer[Float]()
-  //var allRL512s = new ListBuffer[Float]()
   var allZS512s = new ListBuffer[Float]()
   var allSHZS512s = new ListBuffer[Float]()
 
@@ -292,13 +307,16 @@ object EstimatorMain extends App {
 
       allRLs += crmap("RL")
       allZSs += crmap("ZS")
-      allSHZSs += crmap("SHZS")
+      if (ap.ninpxs > ap.bitspx)
+        allSHZSs += crmap("SHZS")
       //allRL256s += crmap("RL256")
       allZS256s += crmap("ZS256")
-      allSHZS256s += crmap("SHZS256")
+      if (ap.ninpxs > ap.bitspx)
+        allSHZS256s += crmap("SHZS256")
       //allRL512s += crmap("RL512")
       allZS512s += crmap("ZS512")
-      allSHZS512s += crmap("SHZS512")
+      if (ap.ninpxs > ap.bitspx)
+        allSHZS512s += crmap("SHZS512")
     } else
       println(f"skip fno${fno} because all pixels are zero")
   }
@@ -307,25 +325,25 @@ object EstimatorMain extends App {
 
   println()
   printStats("zeroratio", allzeroratios.toList)
-
+  println(f"maxzeroratio=$maxzeroratio@$fno_maxzeroratio")
+  println(f"minzeroratio=$minzeroratio@$fno_minzeroratio")
+  println()
 
   val npxs = ap.ninpxs
-  println()
   printStats(f"RL$npxs",   allRLs.toList)
   printStats(f"ZS$npxs",   allZSs.toList)
-  printStats(f"SHZS$npxs", allSHZSs.toList)
+  if (ap.ninpxs > ap.bitspx)
+    printStats(f"SHZS$npxs", allSHZSs.toList)
   println()
   //printStats(f"RL$npxs-256b",   allRL256s.toList)
   printStats(f"ZS$npxs-256b",   allZS256s.toList)
-  printStats(f"SHZS$npxs-256b", allSHZS256s.toList)
+  if (ap.ninpxs > ap.bitspx)
+    printStats(f"SHZS$npxs-256b", allSHZS256s.toList)
   println()
   //printStats(f"RL$npxs-512b",   allRL512s.toList)
   printStats(f"ZS$npxs-512b",   allZS512s.toList)
-  printStats(f"SHZS$npxs-512b", allSHZS512s.toList)
-  println()
-  println(f"maxzeroratio=$maxzeroratio @ $fno_maxzeroratio")
-  println(f"minzeroratio=$minzeroratio @ $fno_minzeroratio")
-
+  if (ap.ninpxs > ap.bitspx)
+    printStats(f"SHZS$npxs-512b", allSHZS512s.toList)
   println()
   println()
   val nframes = ap.fnostop - ap.fnostart + 1
