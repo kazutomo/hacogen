@@ -28,7 +28,7 @@ object Util {
 
   def printStats(label: String, l: List[Float]) {
     val st = calcStats(l)
-    println(f"$label%-10s :  mean=${st.mean}%.3f std=${st.std}%.3f min=${st.min}%.3f max=${st.max}%.3f")
+    println(f"$label%-12s :  mean=${st.mean}%.3f std=${st.std}%.3f min=${st.min}%.3f max=${st.max}%.3f")
   }
 
   def writeList2File(fn: String, data: List[Int]) {

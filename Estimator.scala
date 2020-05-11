@@ -120,11 +120,11 @@ class AppParams {
     println("width:   " + width)
     println("height:  " + height)
     println("size:    " + psize)
-    println(s"offset:  x=$xoff, y=$yoff")
-    println("")
-    println("ninpxs:  " + ninpxs)
-    println("nbufpxs: " + nbufpxs)
-    println("")
+    //println(s"offset:  x=$xoff, y=$yoff")
+    //println("")
+    //println("ninpxs:  " + ninpxs)
+    // println("nbufpxs: " + nbufpxs)
+    //println("")
   }
 }
 
@@ -146,10 +146,9 @@ object EstimatorMain extends App {
   val st = System.nanoTime()
 
   // need to skip frames
-  println(s"Skipping to ${ap.fnostart}")
-  for (fno <- 0 until ap.fnostart) {
-    rawimg.skipImage(in, ap.psize)
-  }
+
+  for (fno <- 0 until ap.fnostart) rawimg.skipImage(in, ap.psize)
+  if (ap.fnostart > 0) println(s"Skipped to ${ap.fnostart}")
 
   def optionalprocessing(fno: Int) {
     // write back to file.
@@ -307,17 +306,22 @@ object EstimatorMain extends App {
   val psec = (et-st)*1e-9
 
   println()
-  printStats("RL",   allRLs.toList)
-  printStats("ZS",   allZSs.toList)
-  printStats("SHZS", allSHZSs.toList)
+  printStats("zeroratio", allzeroratios.toList)
+
+
+  val npxs = ap.ninpxs
   println()
-  //printStats("RL256",   allRL256s.toList)
-  printStats("ZS256",   allZS256s.toList)
-  printStats("SHZS256", allSHZS256s.toList)
+  printStats(f"RL$npxs",   allRLs.toList)
+  printStats(f"ZS$npxs",   allZSs.toList)
+  printStats(f"SHZS$npxs", allSHZSs.toList)
   println()
-  //printStats("RL512",   allRL512s.toList)
-  printStats("ZS512",   allZS512s.toList)
-  printStats("SHZS512", allSHZS512s.toList)
+  //printStats(f"RL$npxs-256b",   allRL256s.toList)
+  printStats(f"ZS$npxs-256b",   allZS256s.toList)
+  printStats(f"SHZS$npxs-256b", allSHZS256s.toList)
+  println()
+  //printStats(f"RL$npxs-512b",   allRL512s.toList)
+  printStats(f"ZS$npxs-512b",   allZS512s.toList)
+  printStats(f"SHZS$npxs-512b", allSHZS512s.toList)
   println()
   println(f"maxzeroratio=$maxzeroratio @ $fno_maxzeroratio")
   println(f"minzeroratio=$minzeroratio @ $fno_minzeroratio")
