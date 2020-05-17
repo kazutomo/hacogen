@@ -14,13 +14,18 @@ object HacoGen extends App {
   val shuffle_nelems = 16
 
   // these params after shuffling
-  val nelems_src = 8
-  val nelems_dst = 16
+  /*
+  val nelems_src = 9
+  val nelems_dst = 28
   val elemsize = 16
+   */
+  val nelems_src = 8
+  val nelems_dst = 28
+  val elemsize = 9
 
   // component target list.
   val targetlist = List(
-    "shuffle", "header",  "selector",  "squeeze",  "stbuf", "comp"
+    "shuffle", "header",  "selector",  "squeeze",  "stbuf", "comp", "shcomp"
   )
 
   val a = if (args.length > 0) args(0) else "comp"
@@ -83,6 +88,13 @@ object HacoGen extends App {
         case _ =>
           iotesters.Driver.execute(args, () => new BitShufflePerChannel(shuffle_nelems, shuffle_elemsize))  { c => new BitShufflePerChannelUnitTester(c) }
       }
+
+    case "shcomp" =>
+      mode match {
+        case "verilog" =>
+          chisel3.Driver.execute(args, () =>   new SHComp(shuffle_nelems, shuffle_elemsize, nelems_src, nelems_dst, elemsize))
+      }
+
 
     case _ =>
       mode match {

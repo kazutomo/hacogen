@@ -171,7 +171,9 @@ object EstimatorMain extends App {
     }
 
     if(ap.dump_vsample) {
+      val fn = f"vsample${fno}-x${ap.vsamplexpos}.txt"
       val vs = rawimg.getVerticalLineSample(ap.vsamplexpos, 0, ap.height)
+      writeList2File(fn, vs)
       sys.exit(0)
     }
   }
@@ -303,6 +305,9 @@ object EstimatorMain extends App {
       }
       val maxval = rawimg.maxval
       println(f"$fno%04d: zeroratio=$zeroratio%.3f maxval=$maxval")
+    }
+
+    if (zeroratio < 1.0.toFloat) {
       val crmap = analyzeframe()
 
       allRLs += crmap("RL")
@@ -322,6 +327,8 @@ object EstimatorMain extends App {
   }
   val et = System.nanoTime()
   val psec = (et-st)*1e-9
+  val nframes = ap.fnostop - ap.fnostart + 1
+  println(f"Processing Time[Sec] = $psec%.3f total / ${psec/nframes.toFloat}%.3f per frame")
 
   println()
   printStats("zeroratio", allzeroratios.toList)
@@ -346,6 +353,4 @@ object EstimatorMain extends App {
     printStats(f"SHZS$npxs-512b", allSHZS512s.toList)
   println()
   println()
-  val nframes = ap.fnostop - ap.fnostart + 1
-  println(f"Processing Time[Sec] = $psec%.3f total / ${psec/nframes.toFloat}%.3f per frame")
 }
