@@ -11,8 +11,9 @@ Scala-based estimation tool to evaluate different compresison schemes
 and operations such as runlength, zero skimming and a bit shuffle
 operation.
 
+<p align="center">
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/streamcomp.png"  width="512" />
-
+</p>
 
 
 Getting Started
@@ -57,18 +58,25 @@ Design RTL view
 Simulation results
 ------------------
 
+<p align="center">
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/haco-wave.png"  width="512" />
+</p>
 
-
+<p align="center">
 <a href="https://raw.githubusercontent.com/kazutomo/hacogen/master/results/comp-output.txt" >simulation result in text file</a>
+</p>
 
 
 Component RTL view
 ------------------
 
+<p align="center">
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/rtl-view-squeeze-shiftup.png"  width="512" />
+</p>
 
+<p align="center">
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/rtl-view-stbuf.png"  width="512" />
+</p>
 
 
 
