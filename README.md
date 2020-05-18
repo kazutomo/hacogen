@@ -1,13 +1,18 @@
 HACOGen - hardware compressor generator
 
+Hardware compressor generator (HACOGen), written in Chisel3, is a
+generator framework for hardware stream compressors.  The current
+version generates a simple zero-skimming compressor logic (Figure
+below). The compressor receives data as a vector of elements every
+single cycle, compress the data and stack it into an internal
+buffer. When the buffer gets full, the flush signal is raised; its
+content is ready to be read. This reposiroty also includes a
+Scala-based estimation tool to evaluate different compresison schemes
+and operations such as runlength, zero skimming and a bit shuffle
+operation.
 
-Hardware compressor generator (HACOGen), written in Chisel3, generates
-a stall-free hardware compressor design (Verilog codes).  The current
-version generates a simple zero-skimming compressor logic (not
-pipelined yet). The compressor receives data as a vector of elements
-(each element is 16-bit by default) every single cycle, compress the
-data and stack it into an internal buffer. When the buffer gets full,
-the flush signal is raised; its content is ready to be read.
+<img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/streamcomp.png"  width="512" />
+
 
 
 Getting Started
