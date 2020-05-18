@@ -50,8 +50,9 @@ To list available target:
 Design RTL view
 ---------------
 
+<p align="center">
 <img src="https://raw.githubusercontent.com/kazutomo/hacogen/master/figs/comp-rtl-view.png"  width="512" />
-
+</p>
 
 Simulation results
 ------------------
