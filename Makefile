@@ -32,8 +32,8 @@ s simulate:
 	sbt "test:runMain hacogen.HacoGen $T --backend-name verilator"
 
 l list:
-	@echo "Available targets: header, selector, squeeze, stbuf"
-#	sbt "test:runMain hacogen.HacoGen list"
+#	@echo "Available targets: header, selector, squeeze, stbuf"
+	sbt "test:runMain hacogen.HacoGen list"
 
 h help:
 	sbt "test:runMain hacogen.HacoGen --help"
