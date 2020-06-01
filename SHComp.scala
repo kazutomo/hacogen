@@ -11,9 +11,16 @@ import chisel3.util.log2Ceil
 class SHComp(
   val sh_nelems_src:Int = 16,
   val sh_elemsize:Int = 9,
-  // below are params for COMP
-  val nelems_src:Int = 9, val nelems_dst:Int = 28,
-  val elemsize:Int = 16) extends Module {
+  //val nelems_src:Int = 9,
+  //val elemsize:Int = 16,
+  val nelems_dst:Int = 28
+) extends Module {
+
+  // params for COMP
+  val nelems_src = sh_elemsize
+  val elemsize = sh_nelems_src
+
+
   val io = IO(new Bundle {
     val in  = Input(Vec(sh_nelems_src, UInt(sh_elemsize.W)))
     val out = Output(Vec(nelems_dst, UInt(elemsize.W)))
