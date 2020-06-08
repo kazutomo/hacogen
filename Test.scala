@@ -93,6 +93,8 @@ object HacoGen extends App {
       mode match {
         case "verilog" =>
           chisel3.Driver.execute(args, () =>   new SHComp(shuffle_nelems, shuffle_elemsize, nelems_dst))
+        case _ =>
+          iotesters.Driver.execute(args, () => new SHComp(shuffle_nelems, shuffle_elemsize))  { c => new SHCompUnitTester(c) }
       }
 
 
