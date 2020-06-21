@@ -1,0 +1,6 @@
+
+- Simply Estimator arguments and add include simple sample data sets (one frame)
+
+- Reuse Estimator codes for testbenches
+
+- Complete SHCompTest
