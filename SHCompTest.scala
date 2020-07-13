@@ -42,9 +42,28 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
   // val flushedbuflen = Output(UInt(log2Ceil(nelems_dst+1).W))
   //
 
+  val seed = 100
+  val r = new scala.util.Random(seed)
+  val maxnzpxs = 4
+
+  def geninputpxs() : List[Int] = {
+    val npxs = r.nextInt(maxnzpxs)
+    val pxidxs = List.tabulate(npxs) { _ => r.nextInt(nelems_src)}
+
+    val tmp = List.tabulate(nelems_src) { i => if (pxidxs contains i) r.nextInt(7) +1 else 0}
+    tmp
+  }
+
+
+
   for (i <- 0 until 10) {
     // fill input
-    val testp = List.tabulate(nelems_src) (i => if(i==0) 1 else 0)
+
+//    val testp = List.tabulate(nelems_src) (i => if(i==0) 1 else 0)
+    val testp = geninputpxs()
+    for(e <- testp) print(e + " ")
+    println()
+
     for (j <- 0 until nelems_src)  poke(c.io.in(j), testp(j))
 
     step(1)
@@ -55,11 +74,11 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
     val bufpos = peek(c.io.bufpos)
     val flushed = peek(c.io.flushed)
     val flushedbuflen = peek(c.io.flushedbuflen)
-    println(f"  p=$bufpos%x fl=$flushed/len=$flushedbuflen%x\n")
-
+    println(f"  p=$bufpos%x fl=$flushed/len=$flushedbuflen%x")
     val ref = shzsEncode(testp, elemsize_src)
     print("ref: ")
-    for(e <- ref) print(e + " ")
+    for(e <- ref) print(f"$e%02x ")
+    println("")
     println("")
 
   }
