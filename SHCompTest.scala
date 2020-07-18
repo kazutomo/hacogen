@@ -5,11 +5,13 @@
 //
 package hacogen
 
-import chisel3.iotesters
-import chisel3.iotesters.{Driver, PeekPokeTester}
 import scala.collection.mutable.ListBuffer
 import localutil.Util._
 import refcomp.RefComp._
+
+import chisel3.iotesters
+import chisel3.iotesters.{Driver, PeekPokeTester}
+
 
 class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
   // SHComp
@@ -54,35 +56,41 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
     tmp
   }
 
+  var refoutput = ListBuffer[Int]()
 
+  val ninputs = 10
 
-  for (i <- 0 until 10) {
-    // fill input
-
-//    val testp = List.tabulate(nelems_src) (i => if(i==0) 1 else 0)
+  for (i <- 0 until ninputs) {
     val testp = geninputpxs()
-    for(e <- testp) print(e + " ")
-    println()
+    val ref = shzsEncode(testp, elemsize_src)
+    refoutput ++= ref
 
+    if (false) {
+      print("testp: ")
+      for(e <- testp) print(e + " ")
+      println()
+
+      print("ref: ")
+      for(e <- ref) print(f"$e%02x ")
+      println("")
+    }
+
+    // fill an input data to the SHComp module with testp
     for (j <- 0 until nelems_src)  poke(c.io.in(j), testp(j))
 
     step(1)
-    for (k <- 0 until nelems_dst) {
-      val tmp = peek(c.io.out(k))
-      print(f"$tmp%02x ")
-    }
     val bufpos = peek(c.io.bufpos)
     val flushed = peek(c.io.flushed)
     val flushedbuflen = peek(c.io.flushedbuflen)
-    println(f"  p=$bufpos%x fl=$flushed/len=$flushedbuflen%x")
-    val ref = shzsEncode(testp, elemsize_src)
-    print("ref: ")
-    for(e <- ref) print(f"$e%02x ")
-    println("")
-    println("")
-
+    if (flushed != 0) {
+      println(f"  p=$bufpos%x fl=$flushed/len=$flushedbuflen%x")
+      for (k <- 0 until nelems_dst) {
+        val tmpref = refoutput(k)
+        expect(c.io.out(k), tmpref)
+      }
+      refoutput.clear()
+    }
   }
 
   println("")
-  println("Currently no test is implemented...")
 }
