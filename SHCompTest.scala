@@ -9,6 +9,7 @@ import scala.collection.mutable.ListBuffer
 import localutil.Util._
 import refcomp.RefComp._
 
+import java.io._
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
@@ -28,6 +29,8 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
   println(f"elemsize_src = ${elemsize_src}")
   println(f"nelems_dst   = ${nelems_dst}")
   println(f"elemsize_dst = ${elemsize_dst}")
+
+  val pw = new PrintWriter(new File("shcomp-output.txt" ))
 
   // TODO: fill an actual test here after CompTest gets updated
   //
@@ -57,23 +60,23 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
   }
 
   var refoutput = ListBuffer[Int]()
-
-  val ninputs = 10
+  val ninputs = 50
+  var inputbits = 0
+  var outputbits = 0
 
   for (i <- 0 until ninputs) {
     val testp = geninputpxs()
     val ref = shzsEncode(testp, elemsize_src)
     refoutput ++= ref
 
-    if (false) {
-      print("testp: ")
-      for(e <- testp) print(e + " ")
-      println()
+    inputbits += nelems_src * elemsize_src
 
-      print("ref: ")
-      for(e <- ref) print(f"$e%02x ")
-      println("")
-    }
+    pw.write(f"step=$i\n")
+    pw.write("testp: ")
+    for(e <- testp) pw.write(f"$e%02x ")
+    pw.write("\nref: ")
+    for(e <- ref) pw.write(f"$e%02x ")
+    pw.write("\n")
 
     // fill an input data to the SHComp module with testp
     for (j <- 0 until nelems_src)  poke(c.io.in(j), testp(j))
@@ -83,14 +86,28 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
     val flushed = peek(c.io.flushed)
     val flushedbuflen = peek(c.io.flushedbuflen)
     if (flushed != 0) {
-      println(f"  p=$bufpos%x fl=$flushed/len=$flushedbuflen%x")
-      for (k <- 0 until nelems_dst) {
+      pw.write(f"len=$flushedbuflen%d p=$bufpos%d\nhw: ")
+      for (k <- 0 until flushedbuflen.toInt) {
+        val tmphw = peek(c.io.out(k))
+        pw.write(f"${tmphw}%02x ")
+        pw.flush()
         val tmpref = refoutput(k)
         expect(c.io.out(k), tmpref)
       }
+      pw.write("\n")
+
       refoutput.clear()
+      if (refoutput.length > nelems_dst) {
+        refoutput ++= ref
+      }
+
+      outputbits += nelems_dst * elemsize_dst
     }
   }
+  pw.close()
 
-  println("")
+  val crratio = inputbits.toDouble / outputbits
+  println(f"crratio=$crratio%.3f")
+
+  println("done")
 }
