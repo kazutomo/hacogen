@@ -1,24 +1,25 @@
 # HACOGen makefile
 # written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
 
-T=comp
+T=shcomp
 
 all:
 	@echo "To run HACOGen:"
 	@echo ""
 	@echo "$ make test       # run Scala test"
 	@echo "$ make simulate   # invoke Verilator"
-	@echo "$ make verilog    # only generate Verilog codes"
+	@echo "$ make verilog    # generate Verilog codes"
 	@echo ""
-	@echo "Shorter form for convinice"
-	@echo "$ make t"
-	@echo "$ make s"
-	@echo "$ make v"
+	@echo "Shortcut for convinice"
+	@echo "$ make t   # for test"
+	@echo "$ make s   # for simulate"
+	@echo "$ make v   # for verilog"
 	@echo ""
 	@echo "To test invididual module"
-	@echo "$ make test T=$target"
+	@echo "$ make test T=squeeze  #  test the squeeze module"
 	@echo ""
-	@echo "target list: header, selector, squeeze, stbuf, shuffle"
+	@echo "To list target available modules"
+	@echo "$ make list"
 	@echo ""
 
 
@@ -32,7 +33,6 @@ s simulate:
 	sbt "test:runMain hacogen.HacoGen $T --backend-name verilator"
 
 l list:
-#	@echo "Available targets: header, selector, squeeze, stbuf"
 	sbt "test:runMain hacogen.HacoGen list"
 
 h help:
