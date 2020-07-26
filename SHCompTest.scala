@@ -51,10 +51,13 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
   val r = new scala.util.Random(seed)
   val maxnzpxs = 4
 
+  // TODO: use Estimator's code to generate test patterns from actual image
   def geninputpxs() : List[Int] = {
-    val npxs = r.nextInt(maxnzpxs)
-    val pxidxs = List.tabulate(npxs) { _ => r.nextInt(nelems_src)}
 
+    // randomly generate a test pattern with the lengtn nelems_src, where the total number of non-zero pixels is npxs.
+    val npxs = r.nextInt(maxnzpxs)
+    // fill a list than includes the randomly-selected locations of non-zero pixels
+    val pxidxs = List.tabulate(npxs) { _ => r.nextInt(nelems_src)}
     val tmp = List.tabulate(nelems_src) { i => if (pxidxs contains i) r.nextInt(7) +1 else 0}
     tmp
   }
