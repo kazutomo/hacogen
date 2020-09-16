@@ -92,6 +92,12 @@ object RefComp {
     zsEncode(bs, bitspx)
   }
 
+  // shuffled rl
+  def shrlEncode(px: List[Int], bitspx: Int) : List[Int] = {
+    val bs = bitShuffle(px, bitspx)
+    rlEncode(bs)
+  }
+
   def compareTwoLists(a: List[Int], b: List[Int]) : Boolean = {
     if (a.length != b.length) return false
 

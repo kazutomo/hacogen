@@ -194,6 +194,7 @@ object EstimatorMain extends App {
     var enclens_rl   = new ListBuffer[Int]()
     var enclens_zs   = new ListBuffer[Int]()
     var enclens_shzs = new ListBuffer[Int]()
+    var enclens_shrl = new ListBuffer[Int]()
 
     // chunk up to rows whose height is ap.ninpxs
     for (yoff <- 0 until hyd by ap.ninpxs) {
@@ -207,8 +208,21 @@ object EstimatorMain extends App {
         // only check the number of pixel output
         enclens_rl   += rlEncode(indata).length
         enclens_zs   += zsEncode(indata, ap.bitspx).length
-        if (ap.ninpxs > ap.bitspx)
+        if (ap.ninpxs > ap.bitspx) {
+
+          val tmpa = shzsEncode(indata, ap.bitspx)
+          val tmpb = shrlEncode(indata, ap.bitspx)
+          print("shzs: ")
+          for (e <- tmpa) print(e + " ")
+          println()
+          print("shrl: ")
+          for (e <- tmpb) print(e + " ")
+          println()
+
+
           enclens_shzs += shzsEncode(indata, ap.bitspx).length
+          enclens_shrl += shrlEncode(indata, ap.bitspx).length
+        }
       }
     }
 
@@ -217,6 +231,10 @@ object EstimatorMain extends App {
 
     val nshzs =
       if (ap.ninpxs > ap.bitspx) enclens_shzs reduce(_+_)
+      else 1
+
+    val nshrl =
+      if (ap.ninpxs > ap.bitspx) enclens_shrl reduce(_+_)
       else 1
 
     val ti = total_inpxs.toFloat
@@ -260,7 +278,9 @@ object EstimatorMain extends App {
     )
 
     if (ap.ninpxs > ap.bitspx)
-      ret ++ Map("SHZS" -> tsi/nshzs,
+      ret ++ Map(
+        "SHZS" -> tsi/nshzs,
+        "SHRL" -> tsi/nshrl,
         "SHZS256" -> tsi/b256nshzs,
         "SHZS512" -> tsi/b512nshzs)
     else
@@ -273,6 +293,7 @@ object EstimatorMain extends App {
   var allRLs = new ListBuffer[Float]()
   var allZSs = new ListBuffer[Float]()
   var allSHZSs = new ListBuffer[Float]()
+  var allSHRLs = new ListBuffer[Float]()
   var allZS256s = new ListBuffer[Float]()
   var allSHZS256s = new ListBuffer[Float]()
   var allZS512s = new ListBuffer[Float]()
@@ -312,8 +333,10 @@ object EstimatorMain extends App {
 
       allRLs += crmap("RL")
       allZSs += crmap("ZS")
-      if (ap.ninpxs > ap.bitspx)
+      if (ap.ninpxs > ap.bitspx) {
         allSHZSs += crmap("SHZS")
+        allSHRLs += crmap("SHRL")
+      }
       //allRL256s += crmap("RL256")
       allZS256s += crmap("ZS256")
       if (ap.ninpxs > ap.bitspx)
@@ -341,6 +364,8 @@ object EstimatorMain extends App {
   printStats(f"ZS$npxs",   allZSs.toList)
   if (ap.ninpxs > ap.bitspx)
     printStats(f"SHZS$npxs", allSHZSs.toList)
+  if (ap.ninpxs > ap.bitspx)
+    printStats(f"SHRL$npxs", allSHRLs.toList)
   println()
   //printStats(f"RL$npxs-256b",   allRL256s.toList)
   printStats(f"ZS$npxs-256b",   allZS256s.toList)
