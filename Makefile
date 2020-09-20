@@ -41,7 +41,6 @@ h help:
 #
 # utility
 #
-
 classes/EstimatorMain.class: Estimator.scala
 	@mkdir -p classes
 	fsc -d classes $<

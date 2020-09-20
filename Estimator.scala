@@ -212,13 +212,14 @@ object EstimatorMain extends App {
 
           val tmpa = shzsEncode(indata, ap.bitspx)
           val tmpb = shrlEncode(indata, ap.bitspx)
-          print("shzs: ")
-          for (e <- tmpa) print(e + " ")
-          println()
-          print("shrl: ")
-          for (e <- tmpb) print(e + " ")
-          println()
-
+          if (false) {
+            print("shzs: ")
+            for (e <- tmpa) print(e + " ")
+            println()
+            print("shrl: ")
+            for (e <- tmpb) print(e + " ")
+            println()
+          }
 
           enclens_shzs += shzsEncode(indata, ap.bitspx).length
           enclens_shrl += shrlEncode(indata, ap.bitspx).length
