@@ -41,30 +41,10 @@ h help:
 #
 # utility
 #
-classes/EstimatorMain.class: Estimator.scala
+
+Estimator: Estimator.scala RawImageTool.scala Localutils.scala RefComp.scala
 	@mkdir -p classes
-	fsc -d classes $<
-
-classes/rawimagetool/RawImageTool.class: RawImageTool.scala
-	@mkdir -p classes
-	fsc -d classes $<
-
-classes/localutil/Localutils.class: Localutils.scala
-	@mkdir -p classes
-	fsc -d classes $<
-
-classes/refcomp/RefComp.class: RefComp.scala
-	@mkdir -p classes
-	fsc -d classes $<
-
-EstimatorClasses=\
-classes/rawimagetool/RawImageTool.class \
-classes/localutil/Localutils.class \
-classes/refcomp/RefComp.class \
-classes/EstimatorMain.class
-
-Estimator: $(EstimatorClasses)
-
+	fsc -d classes $^
 
 clean:
 	rm -rf project target test_run_dir generated *.class

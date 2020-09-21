@@ -10,6 +10,7 @@ import rawimagetool._
 import localutil.Util._
 import refcomp.RefComp._
 
+
 class AppParams {
   def usage() {
     println("Usage: scala EstimatorMain [options] rawimgfilename")
