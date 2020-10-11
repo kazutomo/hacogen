@@ -1,6 +1,6 @@
 
-- Simply Estimator arguments and add include simple sample data sets (one frame)
+- Simplify Estimator arguments and include simple sample data sets (e.g., one frame)
 
-- Reuse Estimator codes for testbenches
+- Optimize for FPGAs: pipeling modules such as STBuf/ShiftElems, Squeeze
 
-- Complete SHCompTest
+
