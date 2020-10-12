@@ -32,11 +32,11 @@ class STBufSW(val nelems_src:Int = 8, val nelems_dst:Int = 16,
   def printbuf() {
     if (true) {
       print("D  : ")
-      dbuf.foreach(e => print(f"$e%d "))
+      dbuf.foreach(e => print(f"$e%2d "))
       println()
     }
     print("Q  : ")
-    qbuf.foreach(e => print(f"$e%d "))
+    qbuf.foreach(e => print(f"$e%2d "))
     println()
   }
 }
@@ -100,7 +100,8 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
       if (flushed == 1)
         expect(c.io.dst(idx), swqbuf(i))
       val v = peek(c.io.dst(idx))
-      print(v + " ")
+      //print(v + " ")
+      print(f"$v%2d ")
       idx += 1
     }
     println()
@@ -119,7 +120,8 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
     print("IN : ")
     var idx = 0
     for (e <- t.data) {
-      print(e + " ")
+      //print(e + " ")
+      print(f"$e%2d")
       poke(c.io.src(idx), e)
       idx += 1
     }
