@@ -23,7 +23,9 @@ Getting Started
      $ cd hacogen
      $ make test
 
-NOTE: tested on Fedora 28 with sbt 1.3.7
+NOTE: I personally tested hacogen on Fedora28 and Fedora32.
+Additional packages you need to install are sbt and verilator.  I hope
+this should work on other Linux distros as well.
 
 How to use HACOGen
 --------------
