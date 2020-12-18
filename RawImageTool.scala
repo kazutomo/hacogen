@@ -20,6 +20,7 @@ class RawImageTool(val width: Int, val height: Int)
   // helper function
   def setpx(x: Int, y: Int, v: Int) : Unit = pixels(y)(x) = v
   def getpx(x: Int, y: Int) : Int = pixels(y)(x)
+  def getpxs(x: Int, y: Int, n: Int = 8 ) : Array[Int] =  pixels(y).slice(x, x+n)
 
   // statistical info
   var maxval = 0

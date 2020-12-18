@@ -42,7 +42,7 @@ h help:
 # utility
 #
 
-Estimator: Estimator.scala RawImageTool.scala Localutils.scala RefComp.scala
+Estimator: Estimator.scala EstimatorAppParams.scala EstimatorPrev.scala RawImageTool.scala Localutils.scala RefComp.scala
 	@mkdir -p classes
 	fsc -d classes $^
 

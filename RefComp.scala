@@ -54,7 +54,11 @@ object RefComp {
     // headers foreach {v => println(v.toBinaryString)}
 
     val nonzero = px.filter(x => x > 0)
-    return headers ::: nonzero
+    // HZM quick hack
+    //    if (nonzero.length < 2)
+    //  return nonzero
+//    else
+      return headers ::: nonzero
   }
 
   def zsDecode(px: List[Int], bitspx: Int, ninpxs: Int) : List[Int] = {
