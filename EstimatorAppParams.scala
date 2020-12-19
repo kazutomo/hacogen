@@ -13,15 +13,16 @@ object EstimatorAppParams {
     println("-psize int  : bytes per pixel: 1 or 4")
     println(s"-fnostart int : start frame number (default: $fnostart)")
     println(s"-fnostop int  : stop frame number (default: $fnostop)")
-    println("-gray: dump gray images.")
-    println("-png: dump png images.")
-    println("-pngregion: dump png images.")
-    println("-vsample xpos : dump vertical sample at xpos (default width/2)")
     println("* compressor configs")
     println("-nrowbundles int : the number of the row bundles")
     println("-ncolshifts int : the number of the pixels per readout")
     println("-ninpxs int : the number of input pixels (depreciated)")
     println("-nbufpxs int : the number of output buffer pixels")
+    println("* dump options")
+    println("-gray: dump gray images")
+    println("-png: dump png images")
+    println("-pngregion: dump png images")
+    println("-vsample xpos : dump vertical sample at xpos (default width/2)")
     println("")
   }
 
@@ -38,8 +39,8 @@ object EstimatorAppParams {
   var vsamplexpos = 0
   var bitspx = 10
   // NOTE: assume width and height >= 256. for now, fixed
-  val window_width  = 256
-  val window_height = 256
+  val window_width  = 128
+  val window_height = 128
   var xoff = 0
   var yoff = 0
   // compressor params. non-adjustable for now
@@ -68,8 +69,8 @@ object EstimatorAppParams {
       case "-fnostop" :: istr :: tail => nextopts(tail, m ++ Map("fnostop" -> istr ))
       case "-xoff" :: istr :: tail => nextopts(tail, m ++ Map("xoff" -> istr ))
       case "-yoff" :: istr :: tail => nextopts(tail, m ++ Map("yoff" -> istr ))
-      case "-nrowbundles" :: istr :: tail => nextopts(tail, m ++ Map("nrowbundles"
-          case "-mcolshifts" :: istr :: tail => nextopts(tail, m ++ Map("ncolshifts"
+      case "-nrowbundles" :: istr :: tail => nextopts(tail, m ++ Map("nrowbundles" -> istr ))
+      case "-mcolshifts" :: istr :: tail => nextopts(tail, m ++ Map("ncolshifts" -> istr ))
       case "-ninpxs" :: istr :: tail => nextopts(tail, m ++ Map("ninpxs" -> istr )) // deprecated
       case "-nbufpxs" :: istr :: tail => nextopts(tail, m ++ Map("nbufpxs" -> istr )) // deprecated
       case str :: Nil => m ++ Map("filename" -> str)
@@ -114,15 +115,14 @@ object EstimatorAppParams {
 
   def printinfo() = {
     println("[Info]")
-    println("dataset: " + filename)
-    println("width:   " + width)
-    println("height:  " + height)
-    println("size:    " + psize)
-    println(s"offset:  x=$xoff, y=$yoff")
-    println("")
-
-    // println("nbufpxs: " + nbufpxs)
-    println("ninpxs:  " + ninpxs + " (deprecated))
+    println("dataset:     " + filename)
+    println("width:       " + width)
+    println("height:      " + height)
+    println("size:        " + psize)
+    println("nrowbundles: " + nrowbundles)
+    //println("ncolshifts:  " + ncolshifts) // we don't need to change this
+    println(s"offset:      x=$xoff, y=$yoff")
+    //println("ninpxs:  " + ninpxs + " (deprecated)")
     println("")
   }
 }

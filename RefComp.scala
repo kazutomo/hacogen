@@ -90,6 +90,49 @@ object RefComp {
     res.toList
   }
 
+  // bitspx is up to 64 or each element of pxs up to 64-bit due to Long
+  def bitShuffleLong(pxs: List[Long], bitspx: Int) : List[Long] = {
+    val npxblock = pxs.length
+    val inp = pxs.toArray
+    val zero = 0.toLong
+    val res = new Array[Long](bitspx)
+
+    def mkNthbitH(n: Int) : Long = 1.toLong << n
+    def isNthbitH(v: Long, n: Int) : Boolean =  (v&mkNthbitH(n)) > 0.toLong
+
+    for (bpos <- 0 until bitspx) {
+      res(bpos) =
+        List.tabulate(npxblock) {i => if(isNthbitH(inp(i),bpos)) mkNthbitH(i) else zero} reduce (_|_)
+    }
+    res.toList
+  }
+
+  def TestbitShuffleLong() {
+    val bits = 10
+    val sz = 64
+    val inp = List.tabulate(sz) { i => i.toLong }
+    val seed = 123
+    val r = new scala.util.Random(seed)
+
+    def test(inp: List[Long]) {
+      val shed = bitShuffleLong(inp, bits)
+      val unshed = bitShuffleLong(shed, sz)
+      val passed = List.tabulate(sz) { i => (unshed(i) == inp(i)) } reduce (_|_)
+      if (! passed) {
+        println("failed")
+        println(inp)
+        println(shed)
+        println(unshed)
+        sys.exit(1)
+      }
+    }
+
+    def nextrndval() : Long = r.nextLong % (1.toLong << bits) // note: bits < 64
+    for (i <- 0 until 30)  test(List.tabulate(sz) { i => nextrndval() })
+    println("passed!")
+  }
+
+
   // shuffled zs
   def shzsEncode(px: List[Int], bitspx: Int) : List[Int] = {
     val bs = bitShuffle(px, bitspx)
