@@ -7,8 +7,9 @@ package hacogen
 
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
+import testutil._
 
-class BitShufflePerChannelUnitTester(c: BitShufflePerChannel) extends PeekPokeTester(c) {
+class BitShuffleUnitTester(c: BitShuffle) extends PeekPokeTester(c) {
 
   val n = c.nelems
   val b = c.elemsize
@@ -58,5 +59,17 @@ class BitShufflePerChannelUnitTester(c: BitShufflePerChannel) extends PeekPokeTe
       expect(c.io.out(j), shuffled(j))
     }
     println()
+  }
+}
+
+
+object BitShuffleTest {
+  def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> 16, "bw" -> 9))
+
+    val dut = () => new BitShuffle(opt("n"), opt("bw"))
+    val tester = c => new BitShuffleUnitTester(c)
+    TestUtil.driverhelper(argsrest, dut, tester)
   }
 }

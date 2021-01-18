@@ -8,6 +8,7 @@ package hacogen
 import chisel3._
 import chisel3.util._
 import chisel3.iotesters._
+import testutil._
 
 class SqueezeUnitTester(c: Squeeze) extends PeekPokeTester(c) {
 
@@ -47,5 +48,17 @@ class SqueezeUnitTester(c: Squeeze) extends PeekPokeTester(c) {
     print(s"n=$ndata\n")
 
     step(1) // step(1) due to flush print msgs
+  }
+}
+
+
+object SqueezeTest {
+  def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> 8, "bw" -> 9))
+
+    val dut = () => new Squeeze(opt("n"), opt("bw"))
+    val tester = c => new SqueezeUnitTester(c)
+    TestUtil.driverhelper(argsrest, dut, tester)
   }
 }

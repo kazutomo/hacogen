@@ -7,6 +7,7 @@ package hacogen
 
 import chisel3._
 import chisel3.iotesters.PeekPokeTester
+import testutil._
 
 class SelectorSW(val nelems_src:Int = 8, val nelems_dst:Int = 16, val elemsize:Int = 16) {
   private var dpos : Int = 0
@@ -72,5 +73,16 @@ class SelectorUnitTester(c: Selector) extends PeekPokeTester(c) {
 
     step(1)
     swsel.step()
+  }
+}
+
+object SelectorTest {
+  def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> 8, "ndst" -> 28, "bw" -> 9))
+
+    val dut = () => new Selector(opt("n"), opt("ndst"), opt("bw"))
+    val tester = c => new SelectorUnitTester(c)
+    TestUtil.driverhelper(argsrest, dut, tester)
   }
 }

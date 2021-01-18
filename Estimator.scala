@@ -22,6 +22,10 @@ import localutil.Util._
 import refcomp.RefComp._
 import estimator._ // AppParams
 
+// without postfixOps, a warning msg will be shown for the following line
+// rowidx => rawimg.getpxs(x, y + rowidx, ap.ncolshifts) toList
+import scala.language.postfixOps
+
 object EstimatorMain extends App {
 
   var ap = EstimatorAppParams

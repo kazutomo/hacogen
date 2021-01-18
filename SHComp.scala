@@ -37,7 +37,7 @@ class SHComp(
     val flushedbuflen = Output(UInt(log2Ceil(nelems_dst+1).W))
   })
 
-  val sfl   = Module(new BitShufflePerChannel(sh_nelems_src, sh_elemsize))
+  val sfl   = Module(new BitShuffle(sh_nelems_src, sh_elemsize))
 
   val sqz   = Module(new Squeeze(nelems_src, elemsize))
   val hdr   = Module(new Header(nelems_src, elemsize))

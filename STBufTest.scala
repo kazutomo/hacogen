@@ -8,6 +8,7 @@ package hacogen
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 import scala.collection.mutable.ListBuffer
+import testutil._
 
 class STBufSW(val nelems_src:Int = 8, val nelems_dst:Int = 16,
   val elemsize:Int = 16)
@@ -132,5 +133,16 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
 
     step(1)
     swstb.step()
+  }
+}
+
+object STBufTest {
+  def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> 8, "ndst" -> 28, "bw" -> 9))
+
+    val dut = () => new STBuf(opt("n"), opt("ndst"), opt("bw"))
+    val tester = c => new STBufUnitTester(c)
+    TestUtil.driverhelper(argsrest, dut, tester)
   }
 }

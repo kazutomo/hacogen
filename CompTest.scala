@@ -10,6 +10,7 @@ import chisel3.iotesters.{Driver, PeekPokeTester}
 import pxgen.generator._  // parsePixelStat, pick_nbit
 import java.io._
 import scala.collection.mutable.ListBuffer
+import testutil._
 
 class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
@@ -117,4 +118,16 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 
   if (failed == 0) println("Validation passed!!!!")
   else println(f"Validation failed ($failed times). Check comp-output.txt")
+}
+
+
+object CompTest {
+  def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> 16, "bw" -> 9, "ndst" -> 28))
+
+    val dut = () => new Comp(opt("n"), opt("ndst"), opt("bw"))
+    val tester = c => new CompUnitTester(c)
+    TestUtil.driverhelper(argsrest, dut, tester)
+  }
 }

@@ -5,38 +5,30 @@ T=shcomp
 
 all:
 	@echo "To run HACOGen:"
+	@echo "$ make TARGET"
 	@echo ""
-	@echo "$ make test       # run Scala test"
-	@echo "$ make simulate   # invoke Verilator"
-	@echo "$ make verilog    # generate Verilog codes"
+	@echo "To generate Verilog file"
+	@echo "$ make TARGET.v	"
 	@echo ""
-	@echo "Shortcut for convinice"
-	@echo "$ make t   # for test"
-	@echo "$ make s   # for simulate"
-	@echo "$ make v   # for verilog"
+	@echo "To simulate using Verilator"
+	@echo "$ make TARGET.vcd"
 	@echo ""
-	@echo "To test invididual module"
-	@echo "$ make test T=squeeze  #  test the squeeze module"
-	@echo ""
-	@echo "To list target available modules"
+	@echo "To list target available modules:"
 	@echo "$ make list"
 	@echo ""
 
+% : %.scala
+	@./run.sh test $@
 
-v verilog:
-	sbt "test:runMain hacogen.HacoGen $T:verilog"
+%.v : %.scala
+	@./run.sh verilog $(@:.v=)
 
-t test:
-	sbt "test:runMain hacogen.HacoGen $T"
-
-s simulate:
-	sbt "test:runMain hacogen.HacoGen $T --backend-name verilator"
+%.vcd : %.scala
+	@./run.sh simulate $(@:.vcd=)
+	@find -type f -name $@
 
 l list:
-	sbt "test:runMain hacogen.HacoGen list"
-
-h help:
-	sbt "test:runMain hacogen.HacoGen --help"
+	@./run.sh list
 
 #
 # utility

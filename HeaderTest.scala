@@ -7,6 +7,7 @@ package hacogen
 
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
+import testutil._
 
 class HeaderUnitTester(c: Header) extends PeekPokeTester(c) {
 
@@ -37,5 +38,17 @@ class HeaderUnitTester(c: Header) extends PeekPokeTester(c) {
     println("OUT:" + binstr(res))
 
     step(1)
+  }
+}
+
+
+object HeaderTest {
+  def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> 8, "bw" -> 9))
+
+    val dut = () => new Header(opt("n"), opt("bw"))
+    val tester = c => new HeaderUnitTester(c)
+    TestUtil.driverhelper(argsrest, dut, tester)
   }
 }

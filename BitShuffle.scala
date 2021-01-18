@@ -10,7 +10,7 @@ import chisel3.util._  // Cat() is there
 
 // nelems : the number elems per channel
 // elemsize : the number of bits per elem
-class BitShufflePerChannel(val nelems:Int = 16, val elemsize:Int = 9) extends Module {
+class BitShuffle(val nelems:Int = 16, val elemsize:Int = 9) extends Module {
 
   val io = IO(new Bundle {
     val in  = Input( Vec(nelems, UInt(elemsize.W)))

@@ -13,6 +13,7 @@ import java.io._
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
+import testutil._
 
 class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
   // SHComp
@@ -113,4 +114,15 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
   println(f"crratio=$crratio%.3f")
 
   println("done")
+}
+
+object SHCompTest {
+  def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> 16, "bw" -> 9, "ndst" -> 28))
+
+    val dut = () => new SHComp(opt("n"), opt("bw"), opt("ndst"))
+    val tester = c => new SHCompUnitTester(c)
+    TestUtil.driverhelper(argsrest, dut, tester)
+  }
 }
