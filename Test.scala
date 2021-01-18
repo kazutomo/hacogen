@@ -3,17 +3,20 @@
 //
 // written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
 // 
-package hacogen
+package testmain
+
+// old one-row design. initial design when the shift and output strategy were not clear
+import onerowold._
 
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
 import testutil._
 
-object HacoGen extends App {
+object Main extends App {
 
   if (args.length < 2) {
-    println("Usage: hacogen.HacoGen command target [options]")
+    println("Usage: testmain.Main command target [options]")
     println("")
     System.exit(1)
   }

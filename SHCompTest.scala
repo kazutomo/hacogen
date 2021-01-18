@@ -3,7 +3,7 @@
 //
 // written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
 //
-package hacogen
+package onerowold
 
 import scala.collection.mutable.ListBuffer
 import localutil.Util._
