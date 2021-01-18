@@ -7,6 +7,7 @@ package launcher
 
 import onerowold._ // old one-row design. initial design when the shift and output strategy were not clear
 import cprim._  // common primitves
+import shred._  // multi-row shuffle-reduce design
 
 import testutil._
 import refcomp._ // reference and estimator
@@ -37,14 +38,17 @@ object Main extends App {
   // key is the name of target module
   // value contains the run method function and the description
   val targetmap = Map(
-    "BitShuffle"       -> (() => BitShuffleTest.run(args2), "cprim"),
-    "Header"           -> (() => HeaderTest.run(args2), "old"),
-    "Selector"         -> (() => SelectorTest.run(args2), "old"),
-    "STBuf"            -> (() => STBufTest.run(args2), "old"),
-    "Squeeze"          -> (() => SqueezeTest.run(args2), "old"),
-    "SHComp"           -> (() => SHCompTest.run(args2), "old"),
-    "Comp"             -> (() => CompTest.run(args2), "old")
-    //"ConcatZeroStrip"  -> (() => ConcatZeroStripTest.run(args2), "concat zero strip"),
+    "BitShuffle"      -> (() => BitShuffleTest.run(args2), "cprim"),
+    "MMSortTwo"       -> (() => MMSortTwoTest.run(args2), "shred"),
+    "ConcatZeroStrip" -> (() => ConcatZeroStripTest.run(args2), "shred"),
+    "ShuffleMerge"    -> (() => ShuffleMergeTest.run(args2), "shred"),
+    "Comp128"         -> (() => Comp128Test.run(args2), "shred"),
+    "Header"          -> (() => HeaderTest.run(args2), "onerowold"),
+    "Selector"        -> (() => SelectorTest.run(args2), "onerowold"),
+    "STBuf"           -> (() => STBufTest.run(args2), "onerowold"),
+    "Squeeze"         -> (() => SqueezeTest.run(args2), "onerowold"),
+    "SHComp"          -> (() => SHCompTest.run(args2), "onerowold"),
+    "Comp"            -> (() => CompTest.run(args2), "onerowold")
   )
 
   TestUtil.launch(args, targetmap)
