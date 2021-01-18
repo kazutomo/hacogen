@@ -3,7 +3,7 @@
 //
 // written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
 //
-package onerowold
+package cprim // compresison primitives
 
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}

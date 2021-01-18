@@ -27,11 +27,11 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-version := "0.3.0"
+version := "0.4.0"
 
 name := "hacogen"
 
-// mainClass in (Compile, run) := Some("hacogen.TestMain")
+// mainClass in (Compile, run) := Some("testmain.Main")
 
 scalaVersion := "2.11.12"
 

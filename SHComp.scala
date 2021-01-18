@@ -8,6 +8,8 @@ package onerowold
 import chisel3._
 import chisel3.util.log2Ceil
 
+import cprim._  // BitShuffle
+
 class SHComp(
   val sh_nelems_src:Int = 16,
   val sh_elemsize:Int = 9,
