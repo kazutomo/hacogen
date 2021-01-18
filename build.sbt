@@ -1,5 +1,5 @@
 // This file was copied from Chisel tutorial
-// LICENSE: chisel-tutorial licence terms
+11;rgb:ffff/ffff/ffff// LICENSE: chisel-tutorial licence terms
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
@@ -27,13 +27,11 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-version := "0.4.0"
+version := "0.5.0"
 
 name := "hacogen"
 
-// mainClass in (Compile, run) := Some("testmain.Main")
-
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.12"
 
 crossScalaVersions := Seq("2.11.12", "2.12.4")
 
