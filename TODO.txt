@@ -1,6 +1,4 @@
 
-- Simplify Estimator arguments and include simple sample data sets (e.g., one frame)
-
 - Optimize for FPGAs: pipeling modules such as STBuf/ShiftElems, Squeeze
 
 

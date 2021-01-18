@@ -30,24 +30,18 @@ this should work on other Linux distros as well.
 How to use HACOGen
 --------------
 
-     $ make test       # runs Scala test.
-     $ make simulate   # invokes Verilator and generates vcd.
-     $ make verilog    # generates Verilog codes.
+     $ ./run.sh l         # list available targets
+     $ ./run.sh t TARGET  # test the specified module
+     $ ./run.sh s TARGET  # simulate the specified module
 
-Shorter target names for convinice
+     NOTE: Replace TARGET with one of the available targets
 
-     $ make t
-     $ make s
-     $ make v
+     You can also use make:
 
-To test invididual module:
+     $ make TARGET       # test using Scala-based simulator
+     $ make TARGET.v     # generate Verilog file
+     $ make TARGET.vcd   # simulate using Verilator
 
-     $ make test T=selector
-
-To list available target:
-
-     $ make list
-     Available targets: header, selector, squeeze, stbuf
 
 
 Design RTL view
