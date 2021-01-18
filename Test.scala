@@ -3,15 +3,17 @@
 //
 // written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
 // 
-package testmain
+package launcher
 
 import onerowold._ // old one-row design. initial design when the shift and output strategy were not clear
 import cprim._  // common primitves
 
+import testutil._
+import refcomp._ // reference and estimator
+
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
-import testutil._
 
 object Main extends App {
 
@@ -23,7 +25,15 @@ object Main extends App {
 
   val args2 = args.drop(2) // drop the command and target
 
-  cprim.BitShuffleTest.run(args2)
+  if (TestUtil.checkfirstcharnocap(args(0), "e")) {
+    println("calling estimator")
+    args.drop(1) foreach {println(_)}
+    Estimator.run(args.drop(1))
+    // EstimatorPrev.run(args.drop(1)) // to invoke the prev version
+    System.exit(0)
+  }
+  System.exit(0)
+
 
   // default params and component target list
   // key is the name of target module

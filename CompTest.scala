@@ -7,10 +7,12 @@ package onerowold
 
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
-import pxgen.generator._  // parsePixelStat, pick_nbit
 import java.io._
 import scala.collection.mutable.ListBuffer
 import testutil._
+
+import refcomp.generator._  // parsePixelStat, pick_nbit
+
 
 class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 

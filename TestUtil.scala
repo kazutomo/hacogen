@@ -14,6 +14,8 @@ object TestUtil {
 
   var verilogonly = false
 
+  def checkfirstcharnocap(s: String, c: String) : Boolean = if (s.toLowerCase().substring(0,1) == c ) true else false
+
   def launch(args: Array[String], targetmap: Map[String, (() => Unit, String)]) {
 
     val mode   = args(0)
@@ -27,7 +29,6 @@ object TestUtil {
       }
     }
 
-    def checkfirstcharnocap(s: String, c: String) : Boolean = if (s.toLowerCase().substring(0,1) == c ) true else false
 
     // check see if only verilog output
     verilogonly = checkfirstcharnocap(mode, "v")

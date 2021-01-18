@@ -3,7 +3,7 @@
 //
 // written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
 //
-package pxgen
+package refcomp
 
 import scala.io.Source
 import scala.util.control._

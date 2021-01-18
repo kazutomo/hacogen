@@ -12,21 +12,31 @@
 // (analyze.sh) in my local repo.
 //
 
+package refcomp
+
 import Array._
 import scala.collection.mutable.ListBuffer
 import java.io._
 
 // local claases
-import rawimagetool._
-import localutil.Util._
+import refcomp.Util._
 import refcomp.RefComp._
-import estimator._ // AppParams
+
+//import rawimagetool._
+//import localutil.Util._
+//import refcomp.RefComp._
+//import estimator._ // AppParams
 
 // without postfixOps, a warning msg will be shown for the following line
 // rowidx => rawimg.getpxs(x, y + rowidx, ap.ncolshifts) toList
 import scala.language.postfixOps
 
-object EstimatorMain extends App {
+//object EstimatorMain extends App {
+object Estimator {
+
+  // NOTE: indent inside run() later
+  def run(args: Array[String]) {
+    args foreach {println(_)}
 
   var ap = EstimatorAppParams
   ap.getopts(args)
@@ -74,5 +84,6 @@ object EstimatorMain extends App {
 
     printStats("BundleBitShuffle", cr_bbs.flatten.toList)
 
+  }
   }
 }

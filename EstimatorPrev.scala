@@ -1,3 +1,5 @@
+package refcomp
+
 import Array._
 import java.io._
 import java.nio.ByteBuffer
@@ -6,12 +8,18 @@ import javax.imageio.ImageIO // png
 import java.awt.image.BufferedImage // png
 
 // local claases
-import rawimagetool._
-import localutil.Util._
+import refcomp.Util._
 import refcomp.RefComp._
-import estimator._ // AppParams
 
-object EstimatorMainV1 extends App {
+//import rawimagetool._
+//import localutil.Util._
+//import refcomp.RefComp._
+//import estimator._ // AppParams
+
+object EstimatorPrev  {
+
+  // NOTE: indent inside run() later
+  def run(args: Array[String]) {
 
   var ap = EstimatorAppParams
 
@@ -286,5 +294,6 @@ object EstimatorMainV1 extends App {
     printStats(f"SHZS$npxs-512b", allSHZS512s.toList)
  */
   println()
-  println()
+    println()
+  }
 }

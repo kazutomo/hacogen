@@ -1,4 +1,4 @@
-package estimator
+package refcomp
 
 object EstimatorAppParams {
   def usage() {

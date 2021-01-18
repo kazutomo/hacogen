@@ -1,4 +1,4 @@
-package rawimagetool
+package refcomp
 
 import Array._
 import java.io._

@@ -6,7 +6,7 @@
 package onerowold
 
 import scala.collection.mutable.ListBuffer
-import localutil.Util._
+import refcomp.Util._
 import refcomp.RefComp._
 
 import java.io._
