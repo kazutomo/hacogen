@@ -32,8 +32,6 @@ object Main extends App {
     // EstimatorPrev.run(args.drop(1)) // to invoke the prev version
     System.exit(0)
   }
-  System.exit(0)
-
 
   // default params and component target list
   // key is the name of target module

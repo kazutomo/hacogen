@@ -26,6 +26,6 @@ if [ ${mode:0:1} = 's' ] ; then
     opts="--backend-name verilator $opts"
 fi
 
-sbt "test:runMain testmain.Main $mode $target $opts"
+sbt "test:runMain launcher.Main $mode $target $opts"
 
 exit 0
