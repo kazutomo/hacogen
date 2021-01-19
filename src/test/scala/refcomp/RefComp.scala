@@ -90,6 +90,7 @@ object RefComp {
     res.toList
   }
 
+  // TODO: Convert this to BigInt
   // bitspx is up to 64 or each element of pxs up to 64-bit due to Long
   def bitShuffleLong(pxs: List[Long], bitspx: Int) : List[Long] = {
     val npxblock = pxs.length

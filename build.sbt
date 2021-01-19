@@ -1,5 +1,5 @@
 // This file was copied from Chisel tutorial
-11;rgb:ffff/ffff/ffff// LICENSE: chisel-tutorial licence terms
+// LICENSE: chisel-tutorial licence terms
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {

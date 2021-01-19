@@ -6,6 +6,55 @@ import chisel3.iotesters.{Driver, PeekPokeTester}
 import testutil._
 
 class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
+  val bitwidth = c.elemsize
+  val nrows = c.nrows
+  val nshifts = c.nshifts
+  val nblocks = c.nblocks
+  val bwblock = c.bwblock
+
+
+
+  def bitShuffle(pxs: List[BigInt], bitspx: Int) : List[BigInt] = {
+    val npxblock = pxs.length
+    val inp = pxs.toArray
+    val zero = BigInt(0)
+    val res = new Array[BigInt](bitspx)
+
+    def mkNthbitH(n: Int) : BigInt = BigInt(1) << n
+    def isNthbitH(v: BigInt, n: Int) : Boolean =  (v&mkNthbitH(n)) > BigInt(0)
+
+    for (bpos <- 0 until bitspx) {
+      res(bpos) =
+        List.tabulate(npxblock) {i => if(isNthbitH(inp(i),bpos)) mkNthbitH(i) else zero} reduce (_|_)
+    }
+    res.toList
+  }
+
+  def ref(data: List[BigInt]) : (List[BigInt], BigInt) = {
+    val blocks = data.sliding(bwblock).toList
+
+    val tmp = blocks map {b => bitShuffle(b, bitwidth)}
+    val shuffled = tmp.flatten
+
+    val mask = shuffled.zipWithIndex.map {case (v,i) => if (v>0) BigInt(1)<<i.toInt else BigInt(0)} reduce (_|_)
+
+    val nz = shuffled filter (_ !=0)
+    val z = shuffled filter (_ ==0)
+    (nz:::z, mask)
+  }
+
+  def runtest(data: List[BigInt]) {
+    data.zipWithIndex.map {case (v,i) => poke(c.io.in(i), v)}
+    val out = List.tabulate(nblocks) {i => peek(c.io.out(i))}
+    val outmask = peek(c.io.outmask)
+    val (refout, refoutmask) = ref(data)
+
+    println("dut.mask=" + TestUtil.convIntegerToBinStr(outmask, nblocks))
+    // out foreach {v => print(TestUtil.convIntegerToHexStr(v, bwblock) + " ")}
+    //println()
+  }
+
+  runtest(List.fill(nrows*nshifts){BigInt(1)})
 }
 
 object Comp128Test {
