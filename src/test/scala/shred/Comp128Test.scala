@@ -11,8 +11,8 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
   val nshifts = c.nshifts
   val nblocks = c.nblocks
   val bwblock = c.bwblock
-
-
+  val uncompressedbits = bitwidth*nrows*nshifts
+  val headerbits = nblocks
 
   def bitShuffle(pxs: List[BigInt], bitspx: Int) : List[BigInt] = {
     val npxblock = pxs.length
@@ -31,7 +31,7 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
   }
 
   def ref(data: List[BigInt]) : (List[BigInt], BigInt) = {
-    val blocks = data.sliding(bwblock).toList
+    val blocks = data.sliding(bwblock, bwblock).toList
 
     val tmp = blocks map {b => bitShuffle(b, bitwidth)}
     val shuffled = tmp.flatten
@@ -45,16 +45,31 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
 
   def runtest(data: List[BigInt]) {
     data.zipWithIndex.map {case (v,i) => poke(c.io.in(i), v)}
-    val out = List.tabulate(nblocks) {i => peek(c.io.out(i))}
-    val outmask = peek(c.io.outmask)
     val (refout, refoutmask) = ref(data)
 
+    expect(c.io.outmask, refoutmask)
+    refout.zipWithIndex.map {case (v,i) => expect(c.io.out(i), v)}
+
+    // debug output
+    val out = List.tabulate(nblocks) {i => peek(c.io.out(i))}
+    val outmask = peek(c.io.outmask)
+
+    val nz = out.filter (_ != 0)
+    val compressedbits = (nz.length * bwblock) + headerbits
+    println("uncompressedbits/compressedbits: " + uncompressedbits + "/" + compressedbits + " => " + (uncompressedbits.toFloat/compressedbits.toFloat))
+
     println("dut.mask=" + TestUtil.convIntegerToBinStr(outmask, nblocks))
+    println("ref.mask=" + TestUtil.convIntegerToBinStr(refoutmask, nblocks))
     // out foreach {v => print(TestUtil.convIntegerToHexStr(v, bwblock) + " ")}
     //println()
   }
 
-  runtest(List.fill(nrows*nshifts){BigInt(1)})
+  // simple inputs
+  val n = nrows*nshifts
+  runtest(List.fill(n){BigInt(0)})
+  runtest(List.fill(n){BigInt(1)})
+  runtest(List.fill(n){BigInt(1023)})
+  runtest(List.tabulate(n){i => if ((i%8)==1) BigInt(1) else BigInt(0)})
 }
 
 object Comp128Test {
