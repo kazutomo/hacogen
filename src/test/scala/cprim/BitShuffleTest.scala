@@ -57,6 +57,7 @@ class BitShuffleUnitTester(c: BitShuffle) extends PeekPokeTester(c) {
       val tmp = peek(c.io.out(j))
       print(f"$tmp%04x ")
       expect(c.io.out(j), shuffled(j))
+      step(1)
     }
     println()
   }

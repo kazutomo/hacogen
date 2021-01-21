@@ -15,7 +15,6 @@ import refcomp._ // reference and estimator
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 
-
 object Main extends App {
 
   if (args.length < 2) {
