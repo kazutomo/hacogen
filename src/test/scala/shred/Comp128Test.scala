@@ -51,6 +51,7 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
 
   def runtest(data: List[BigInt]) : Float = {
     data.zipWithIndex.map {case (v,i) => poke(c.io.in(i), v)}
+    step(1)
     val (refout, refoutmask) = ref(data)
 
     expect(c.io.outmask, refoutmask)
