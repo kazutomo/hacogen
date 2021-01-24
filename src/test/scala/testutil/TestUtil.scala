@@ -67,11 +67,11 @@ object TestUtil {
   }
 
 
-  def getopts(args: Array[String], opts: Map[String, Int]) :
-      (Array[String], Map[String, Int]) = {
+  def getopts(args: Array[String], opts: Map[String, String]) :
+      (Array[String], Map[String, String]) = {
 
-    def nextopts(l: Array[String], m : Map[String, Int], res: Map[String, Int] ) :
-        (Array[String], Map[String, Int], Map[String, Int]) = {
+    def nextopts(l: Array[String], m : Map[String, String], res: Map[String, String] ) :
+        (Array[String], Map[String, String], Map[String, String]) = {
       /*
       print("debug nextopts()")
       print("l=")
@@ -89,19 +89,19 @@ object TestUtil {
           if (pos < 0 || pos+1 >= l.length) {
             nextopts(l, m.tail, res ++ Map(k -> v))
           } else {
-            nextopts(l.patch(pos, Nil, 2), m.tail, res ++ Map(k -> l(pos+1).toInt))
+            nextopts(l.patch(pos, Nil, 2), m.tail, res ++ Map(k -> l(pos+1)))
           }
         }
       } else {
         (l, m, res)
       }
     }
-    val (a, o, res) = nextopts(args, opts, Map[String, Int]())
+    val (a, o, res) = nextopts(args, opts, Map[String, String]())
     (a, res)
   }
 
   def test_getopts() {
-    def runtest(args: Array[String], opts: Map[String,Int]) {
+    def runtest(args: Array[String], opts: Map[String,String]) {
       println("[Input]")
       print("args: ")
       args foreach {v => print(v + " ")}
@@ -117,11 +117,11 @@ object TestUtil {
 
     runtest(Array(), Map())
     runtest(Array("rest"), Map())
-    runtest(Array("rest"), Map("n" -> 3, "bw" -> 20))
-    runtest(Array("-n", "12", "rest"), Map("n" -> 3, "bw" -> 20))
-    runtest(Array("-z", "12", "rest"), Map("n" -> 3, "bw" -> 20))
-    runtest(Array("-n", "12", "-bw", "80"), Map("n" -> 3, "bw" -> 20))
-    runtest(Array("-n", "12", "-bw", "80", "rest"), Map("a" -> 11, "n" -> 3, "bw" -> 20))
+    runtest(Array("rest"), Map("n" -> "3", "bw" -> "20"))
+    runtest(Array("-n", "12", "rest"), Map("n" -> "3", "bw" -> "20"))
+    runtest(Array("-z", "12", "rest"), Map("n" -> "3", "bw" -> "20"))
+    runtest(Array("-n", "12", "-bw", "80"), Map("n" -> "3", "bw" -> "20"))
+    runtest(Array("-n", "12", "-bw", "80", "rest"), Map("a" -> "11", "n" -> "3", "bw" -> "20"))
   }
 
   def driverhelper[T <: MultiIOModule](args: Array[String], dutgen : () => T, testergen: T => PeekPokeTester[T]) {

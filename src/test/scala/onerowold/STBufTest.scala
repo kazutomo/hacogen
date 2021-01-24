@@ -139,9 +139,9 @@ class STBufUnitTester(c: STBuf) extends PeekPokeTester(c) {
 object STBufTest {
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 8, "ndst" -> 28, "bw" -> 9))
+      Map("n" -> "8", "ndst" -> "28", "bw" -> "9"))
 
-    val dut = () => new STBuf(opt("n"), opt("ndst"), opt("bw"))
+    val dut = () => new STBuf(opt("n").toInt, opt("ndst").toInt, opt("bw").toInt)
     val tester = c => new STBufUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }

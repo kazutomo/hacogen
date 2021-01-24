@@ -119,9 +119,9 @@ class SHCompUnitTester(c: SHComp) extends PeekPokeTester(c) {
 object SHCompTest {
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 16, "bw" -> 9, "ndst" -> 28))
+      Map("n" -> "16", "bw" -> "9", "ndst" -> "28"))
 
-    val dut = () => new SHComp(opt("n"), opt("bw"), opt("ndst"))
+    val dut = () => new SHComp(opt("n").toInt, opt("bw").toInt, opt("ndst").toInt)
     val tester = c => new SHCompUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }

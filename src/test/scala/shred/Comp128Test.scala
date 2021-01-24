@@ -107,7 +107,7 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
       ("A040_Latex_67nm_conc_025C_att0_Lq0_001_00001-01000_1556x516_uint8.bin", 1556, 516, 1, 200)
     )
 
-    val idx = 2
+    val idx = 1
     val filename = datafns(idx)._1
     val width    = datafns(idx)._2
     val height   = datafns(idx)._3

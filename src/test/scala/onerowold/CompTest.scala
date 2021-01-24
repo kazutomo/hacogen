@@ -126,9 +126,9 @@ class CompUnitTester(c: Comp) extends PeekPokeTester(c) {
 object CompTest {
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 16, "bw" -> 9, "ndst" -> 28))
+      Map("n" -> "16", "bw" -> "9", "ndst" -> "28"))
 
-    val dut = () => new Comp(opt("n"), opt("ndst"), opt("bw"))
+    val dut = () => new Comp(opt("n").toInt, opt("ndst").toInt, opt("bw").toInt)
     val tester = c => new CompUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }

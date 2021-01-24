@@ -55,9 +55,9 @@ class SqueezeUnitTester(c: Squeeze) extends PeekPokeTester(c) {
 object SqueezeTest {
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 8, "bw" -> 9))
+      Map("n" -> "8", "bw" -> "9"))
 
-    val dut = () => new Squeeze(opt("n"), opt("bw"))
+    val dut = () => new Squeeze(opt("n").toInt, opt("bw").toInt)
     val tester = c => new SqueezeUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }

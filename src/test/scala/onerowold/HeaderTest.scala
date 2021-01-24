@@ -45,9 +45,9 @@ class HeaderUnitTester(c: Header) extends PeekPokeTester(c) {
 object HeaderTest {
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 8, "bw" -> 9))
+      Map("n" -> "8", "bw" -> "9"))
 
-    val dut = () => new Header(opt("n"), opt("bw"))
+    val dut = () => new Header(opt("n").toInt, opt("bw").toInt)
     val tester = c => new HeaderUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }

@@ -77,9 +77,9 @@ object ConcatZeroStripTest {
 
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 2, "bw" -> 64))
+      Map("n" -> "2", "bw" -> "64"))
 
-    val dut = () => new ConcatZeroStrip(opt("n"), opt("bw"))
+    val dut = () => new ConcatZeroStrip(opt("n").toInt, opt("bw").toInt)
     val tester = c => new ConcatZeroStripUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }

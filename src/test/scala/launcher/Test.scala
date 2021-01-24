@@ -38,6 +38,7 @@ object Main extends App {
   // value contains the run method function and the description
   val targetmap = Map(
     "BitShuffle"      -> (() => BitShuffleTest.run(args2), "cprim"),
+    "CountLZ"         -> (() => CountLZTest.run(args2), "cprim"),
     "MMSortTwo"       -> (() => MMSortTwoTest.run(args2), "shred"),
     "ConcatZeroStrip" -> (() => ConcatZeroStripTest.run(args2), "shred"),
     "ShuffleMerge"    -> (() => ShuffleMergeTest.run(args2), "shred"),

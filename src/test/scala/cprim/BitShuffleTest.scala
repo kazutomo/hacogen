@@ -67,9 +67,9 @@ class BitShuffleUnitTester(c: BitShuffle) extends PeekPokeTester(c) {
 object BitShuffleTest {
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 16, "bw" -> 9))
+      Map("n" -> "16", "bw" -> "9"))
 
-    val dut = () => new BitShuffle(opt("n"), opt("bw"))
+    val dut = () => new BitShuffle(opt("n").toInt, opt("bw").toInt)
     val tester = c => new BitShuffleUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }

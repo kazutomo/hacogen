@@ -79,9 +79,9 @@ class SelectorUnitTester(c: Selector) extends PeekPokeTester(c) {
 object SelectorTest {
   def run(args: Array[String]) {
     val (argsrest, opt) = TestUtil.getopts(args,
-      Map("n" -> 8, "ndst" -> 28, "bw" -> 9))
+      Map("n" -> "8", "ndst" -> "28", "bw" -> "9"))
 
-    val dut = () => new Selector(opt("n"), opt("ndst"), opt("bw"))
+    val dut = () => new Selector(opt("n").toInt, opt("ndst").toInt, opt("bw").toInt)
     val tester = c => new SelectorUnitTester(c)
     TestUtil.driverhelper(argsrest, dut, tester)
   }
