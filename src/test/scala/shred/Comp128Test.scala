@@ -10,6 +10,14 @@ import refcomp._
 import refcomp.Util._
 import refcomp.RefComp._
 
+object LocalParam {
+  var fn : String = ""
+  var w : Int = 0
+  var h : Int = 0
+  var sz : Int = 0
+  var fno : Int = 0
+}
+
 class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
   val bitwidth = c.elemsize
   val nrows = c.nrows
@@ -96,30 +104,19 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
 
   // load data from image: quick&dirty hard-coded version.
   // clean up and add options later
-  if(true) {
-
-    val homedir = System.getenv("HOME")
-    val basepath = homedir + "/xraydata/"
-    val datafns : Array[(String, Int, Int, Int, Int)] = Array(
-      ("pilatus_image_1679x1475x300_int32.raw", 1679, 1475, 4, 1),
-      ("pilatus_image_1679x1475x300_int32.raw", 1679, 1475, 4, 31),
-      ("scan144_1737_cropped_558x514.bin", 558, 514, 4,  100),
-      ("A040_Latex_67nm_conc_025C_att0_Lq0_001_00001-01000_1556x516_uint8.bin", 1556, 516, 1, 200)
-    )
-
-    val idx = 1
-    val filename = datafns(idx)._1
-    val width    = datafns(idx)._2
-    val height   = datafns(idx)._3
-    val psize    = datafns(idx)._4
-    val frameno  = datafns(idx)._5
+  if(LocalParam.fn.length>0 && LocalParam.sz> 0) {
+    val filename = LocalParam.fn
+    val width    = LocalParam.w
+    val height   = LocalParam.h
+    val psize    = LocalParam.sz
+    val frameno  = LocalParam.fno
     val ycenter = height/2
     val windowheight = 128
     val ybegin = ycenter - windowheight/2
     //val nshifts = 8
     val npxblock = 8
 
-    val in = new FileInputStream(basepath + filename)
+    val in = new FileInputStream(filename)
     val rawimg = new RawImageTool(width, height)
     for (fno <- 0 until frameno) rawimg.skipImage(in, psize)
 
@@ -146,10 +143,19 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
 object Comp128Test {
 
   def run(args: Array[String]) {
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("fn" -> "", "w" -> "0", "h" -> "0",
+        "sz" -> "0", "fno" -> "0") )
+
+    LocalParam.fn = opt("fn")
+    LocalParam.w = opt("w").toInt
+    LocalParam.h = opt("h").toInt
+    LocalParam.sz = opt("sz").toInt
+    LocalParam.fno = opt("fno").toInt
 
     val dut = () => new Comp128()
     val tester = c => new Comp128UnitTester(c)
 
-    TestUtil.driverhelper(args, dut, tester)
+    TestUtil.driverhelper(argsrest, dut, tester)
   }
 }
