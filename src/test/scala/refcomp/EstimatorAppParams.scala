@@ -23,6 +23,7 @@ object EstimatorAppParams {
     println("-png: dump png images")
     println("-pngregion: dump png images")
     println("-vsample xpos : dump vertical sample at xpos (default width/2)")
+    println("-wm: watermark data")
     println("")
   }
 
@@ -36,6 +37,7 @@ object EstimatorAppParams {
   var dump_png = false
   var dump_pngregion = false
   var dump_vsample = false
+  var dump_watermark = false
   var vsamplexpos = 0
   var bitspx = 10
   // NOTE: assume width and height >= 256. for now, fixed
@@ -61,6 +63,7 @@ object EstimatorAppParams {
       case "-gray" :: istr :: tail => nextopts(tail, m ++ Map("gray" -> istr ))
       case "-png" :: istr :: tail => nextopts(tail, m ++ Map("png" -> istr ))
       case "-pngregion" :: istr :: tail => nextopts(tail, m ++ Map("pngregion" -> istr ))
+      case "-watermark" :: istr :: tail => nextopts(tail, m ++ Map("watermark" -> istr ))
       case "-vsample" :: istr :: tail => nextopts(tail, m ++ Map("vsample" -> istr ))
       case "-width" :: istr :: tail => nextopts(tail, m ++ Map("width" -> istr ))
       case "-height" :: istr :: tail => nextopts(tail, m ++ Map("height" -> istr ))
@@ -106,6 +109,7 @@ object EstimatorAppParams {
     if (m contains "gray")     dump_gray = getBoolVal(m, "gray")
     if (m contains "png")      dump_png = getBoolVal(m, "png")
     if (m contains "pngregion")   dump_pngregion = getBoolVal(m, "pngregion")
+    if (m contains "watermark")   dump_watermark = getBoolVal(m, "watermark")
 
     m.get("vsample") match {
       case Some(v) => dump_vsample = true; vsamplexpos = v.toInt

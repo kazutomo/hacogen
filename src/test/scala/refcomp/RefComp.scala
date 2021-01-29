@@ -128,10 +128,39 @@ object RefComp {
       }
     }
 
+
     def nextrndval() : Long = r.nextLong % (1.toLong << bits) // note: bits < 64
     for (i <- 0 until 30)  test(List.tabulate(sz) { i => nextrndval() })
     println("passed!")
   }
+
+
+  def bitShuffleBigInt(pxs: List[BigInt], bitspx: Int) : List[BigInt] = {
+
+    def bittest(v: BigInt, sh: Int) : BigInt = if( (v & (BigInt(1)<<sh)) == 0) BigInt(0) else BigInt(1)
+
+    val n = pxs.length
+    List.tabulate(bitspx) {bpos =>
+      val tmp = List.tabulate(n) {idx => bittest(pxs(idx), bpos)<<idx}
+      tmp.reduce(_|_)
+    }
+  }
+
+  def bitShuffleBigIntTmp(pxs: List[BigInt], bitspx: Int) : List[BigInt] = {
+      val npxblock = pxs.length
+      val inp = pxs.toArray
+      val zero = BigInt(0)
+      val res = new Array[BigInt](bitspx)
+
+      def mkNthbitH(n: Int) : BigInt = BigInt(1) << n
+      def isNthbitH(v: BigInt, n: Int) : Boolean =  (v&mkNthbitH(n)) > BigInt(0)
+
+      for (bpos <- 0 until bitspx) {
+        res(bpos) =
+          List.tabulate(npxblock) {i => if(isNthbitH(inp(i),bpos)) mkNthbitH(i) else zero} reduce (_|_)
+      }
+      res.toList
+    }
 
 
   // shuffled zs

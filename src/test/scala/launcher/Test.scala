@@ -27,7 +27,6 @@ object Main extends App {
 
   if (TestUtil.checkfirstcharnocap(args(0), "e")) {
     println("calling estimator")
-    args.drop(1) foreach {println(_)}
     Estimator.run(args.drop(1))
     // EstimatorPrev.run(args.drop(1)) // to invoke the prev version
     System.exit(0)

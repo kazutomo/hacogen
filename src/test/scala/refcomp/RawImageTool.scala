@@ -39,7 +39,7 @@ class RawImageTool(val width: Int, val height: Int)
       println(f"${buf(3)}:${buf(2)}:${buf(1)}:${buf(0)} => $ret")
     }
      */
-    ret
+    if (ret < 0) 0 else ret
   }
 
   def ShortToBytes(v: Short): Array[Byte] = {
@@ -139,20 +139,19 @@ class RawImageTool(val width: Int, val height: Int)
   }
 
   // pixel value higher equal than threshold, assign the max brightness
-  def writePng(fn: String, threshold: Int) : Unit = {
+  def writePng(fn: String, threshold: Int, logscale:Boolean = false, step : Int = 1) : Unit = {
     val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
     def graytorgb(a: Int) = (a<<16) | (a<<8) | a
 
     for (x <- 0 until width) {
       for (y <- 0 until height) {
-        val tmp = getpx(x,y)
-        val tmp2 = if(tmp>=threshold) 255 else tmp
-/*
-        if( (x>0 && (x % 256)==0) || (y>0 && (y % 256)==0) )
-          img.setRGB(x, y,  0xff0000)
-        else
- */
-          img.setRGB(x, y,  graytorgb(tmp2))
+        def currentpxval(): Int = {
+          val tmp = getpx(x,y)
+          val tmp2 = if (tmp>0 && logscale) (math.ceil(math.log(tmp.toDouble)/math.log(2)).toInt + 1) else tmp
+          val tmp3 = if(tmp2 > threshold) threshold else tmp2
+          tmp3*step
+        }
+        img.setRGB(x, y,  graytorgb(currentpxval()))
       }
     }
     ImageIO.write(img, "png", new File(fn))

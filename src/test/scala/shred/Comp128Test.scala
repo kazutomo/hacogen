@@ -119,6 +119,7 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
     val in = new FileInputStream(filename)
     val rawimg = new RawImageTool(width, height)
     for (fno <- 0 until frameno) rawimg.skipImage(in, psize)
+    if (frameno > 0) println(s"Skipped to ${frameno}")
 
     if (psize == 4) rawimg.readImageInt(in)
     else if (psize == 1) rawimg.readImageByte(in)
@@ -128,6 +129,7 @@ class Comp128UnitTester(c: Comp128) extends PeekPokeTester(c) {
       val b = List.tabulate(nrows) {y => rawimg.getpxs(x, y+ybegin, nshifts)}
       val b2 = b.flatten
       val b3 = b2 map { v => if (v>=1024) 1023 else v}
+
       runtest(b3.map {BigInt(_)})
     }
 
