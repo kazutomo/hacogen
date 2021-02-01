@@ -62,7 +62,7 @@ object Estimator {
       if(ap.dump_png) {
         val pngfn = f"fr${fno}.png"
         println(s"Writing $pngfn")
-        rawimg.writePng(pngfn, 10, logscale = true, step = 25)
+        rawimg.writePng(pngfn, threshold = 10, logscale = true, step = 25)
       }
       if(ap.dump_pngregion) {
         val pngfn = f"fr${fno}-${ap.window_width}x${ap.window_height}+${ap.xoff}+${ap.yoff}.png"
@@ -96,6 +96,7 @@ object Estimator {
     def compressFrameWithBundleBitshuffle() : List[Int] = {
 
       val cr = new ListBuffer[Int]()
+      val shcr = new ListBuffer[Int]()
 
       for (x <- xstart until xend by ap.ncolshifts) {
         var nzlen = 0
@@ -107,8 +108,23 @@ object Estimator {
 
           val bs : List[BigInt] = bitShuffleBigInt(block, ap.bitspx)
           val nonzero = bs.filter {x => x > BigInt(0)}
+          shcr += nonzero.length
           nzlen += nonzero.length
 
+          if (false) { // dump shuffled output with input for longer cases
+            if (nonzero.length>=5) {
+              val fn = "tmp-shuffled-in-out.txt" // ad-hoc
+              try {
+                val out = new FileOutputStream(fn, true)
+                out.write((block.mkString(" ")+"\n").getBytes)
+                out.write((bs.mkString(" ")+"\n\n").getBytes)
+                out.close()
+              } catch {
+                case e: FileNotFoundException => println("Not found:" + fn)
+                case e: IOException => println("Failed to write")
+              }
+            }
+          }
           /* validation
           val decoded = bitShuffleBigInt(bs, pixelsinblock)
 
@@ -124,8 +140,18 @@ object Estimator {
           }
            */
         }
+
         cr += nzlen
       }
+
+      //
+      val nzlengrps = shcr.toList.groupBy {x => x}
+      val nzlengrpss = nzlengrps.toSeq.sortBy(_._1)
+      print("* Histogram: ")
+      nzlengrpss foreach { case (k,v) => print(f"${k}b=${v.length} ") }
+      println("")
+      //
+
       cr.toList
     }
 
