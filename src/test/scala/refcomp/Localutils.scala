@@ -15,7 +15,7 @@ object Util {
     math.sqrt( (sq.sum / x.size).toDouble ).toFloat
   }
 
-  class StatT(val mean: Float=0.0.toFloat, val std: Float, val min: Float, val max: Float)
+  class StatT(val mean: Float=0.0.toFloat, val std: Float=0.0.toFloat, val min: Float=0.0.toFloat, val max: Float=0.0.toFloat)
 
   def calcStats(l: List[Float]) : StatT = {
     val mean = l.sum / l.size

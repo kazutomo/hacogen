@@ -57,7 +57,8 @@ class RawImageTool(val width: Int, val height: Int)
 
   // read an image with 4-byte integer pixels (4 * w * h bytes) and
   // store it to pixels.  maxval and zerocnt are updated
-  def readImageInt(in: FileInputStream) {
+  def readImageInt(in: FileInputStream, skipframes: Int = 0) {
+    //if (skipframes>0) skipImage(in, skipframes)
     resetpixels()
 
     val step = 4
@@ -87,7 +88,9 @@ class RawImageTool(val width: Int, val height: Int)
 
   // read an image with 1-byte integer pixels (w * h bytes) and
   // store it to pixels.  maxval and zerocnt are updated
-  def readImageByte(in: FileInputStream) {
+  def readImageByte(in: FileInputStream, skipframes: Int = 0) {
+    if (skipframes>0) skipImage(in, skipframes)
+
     resetpixels()
 
     try {
