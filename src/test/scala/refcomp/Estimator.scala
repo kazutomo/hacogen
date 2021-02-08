@@ -47,13 +47,14 @@ object Estimator {
 
 
     // open dataset
+    /*
     val in = new FileInputStream(ap.filename)
     val rawimg = new RawImageTool(ap.width, ap.height)
-
     for (fno <- 0 until ap.fnostart) rawimg.skipImage(in, ap.psize)
     if (ap.fnostart > 0) println(s"Skipped to ${ap.fnostart}")
+     */
 
-    def optionalprocessing(fno: Int) {
+    def optionalprocessing(fno: Int, rawimg: RawImageTool) {
       // write back to file.
       // To display an image, display -size $Wx$H -depth 16  imagefile
       if(ap.dump_gray)  {
@@ -98,7 +99,7 @@ object Estimator {
     val pixelsinblock =  ap.nrowbundles * ap.ncolshifts
     val rawbits = windowsize * ap.ncolshifts * ap.bitspx
 
-    def compressFrameWithBundleBitshuffle() : List[Int] = {
+    def compressFrameWithBundleBitshuffle(rawimg: RawImageTool) : List[Int] = {
 
       val cr = new ListBuffer[Int]()
       val shcr = new ListBuffer[Int]()
@@ -171,13 +172,16 @@ object Estimator {
 
       val st = System.nanoTime()
 
-      for (fno <- (ap.fnostart to ap.fnostop) ) {
-        if (ap.psize == 4) rawimg.readImageInt(in)
-        else if (ap.psize == 1) rawimg.readImageByte(in)
+      for (fno <- (ap.fnostart to ap.fnostop).par ) {
+        val in = new FileInputStream(ap.filename)
+        val rawimg = new RawImageTool(ap.width, ap.height)
 
-        optionalprocessing(fno)
+        if (ap.psize == 4) rawimg.readImageInt(in, fno)
+        else if (ap.psize == 1) rawimg.readImageByte(in, fno)
 
-        val nzlenlist = compressFrameWithBundleBitshuffle()
+        optionalprocessing(fno, rawimg)
+
+        val nzlenlist = compressFrameWithBundleBitshuffle(rawimg)
         val compbitlenlist = nzlenlist map {v => v*pixelsinblock + headersize}
         val watermarklist = compbitlenlist map {v => math.ceil(v.toFloat/1024.0).toFloat}
         val unusedbitslist = compbitlenlist map {v => (v%1024).toFloat} // toFloat due to calcStats requires List[Float]
