@@ -42,10 +42,11 @@ class CountLZUnitTester(c: CountLZ) extends PeekPokeTester(c) {
 object CountLZTest {
 
   def run(args: Array[String]) {
-    val nb = 16
-    val dut = () => new CountLZ(nb)
+    val (argsrest, opt) = TestUtil.getopts(args,
+      Map("n" -> "16"))
+    val dut = () => new CountLZ(opt("n").toInt)
     val tester = c => new CountLZUnitTester(c)
 
-    TestUtil.driverhelper(args, dut, tester)
+    TestUtil.driverhelper(argsrest, dut, tester)
   }
 }
