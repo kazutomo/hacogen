@@ -6,7 +6,7 @@ import testutil._
 
 class CountLZUnitTester(c: CountLZ) extends PeekPokeTester(c) {
 
-  val nb = 16 // c.nb // the size of input data in bits
+  val nb = c.nb // the size of input data in bits
 
   val seed = 123
   val rn = new scala.util.Random(seed)

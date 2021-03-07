@@ -27,7 +27,7 @@ class Clz2() extends Module {
 
 // A parameterized version of counting leading-zeros
 // note: nb is the power of two number that is greater-equal than 4.
-class CountLZ(nb: Int = 16) extends Module {
+class CountLZ(val nb: Int = 16) extends Module {
 
   def ispow2(x : Int) : Boolean = (x!=0) && (x & (x-1)) == 0
 
