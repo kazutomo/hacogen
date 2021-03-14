@@ -26,6 +26,15 @@ class CountLZUnitTester(c: CountLZ) extends PeekPokeTester(c) {
     zs + s
   }
 
+  // test all zeros and all ones
+  poke(c.io.in, 0)
+  expect(c.io.out, nb)
+  step(1)
+  poke(c.io.in, (1.toLong << nb)-1)
+  expect(c.io.out, 0)
+  step(1)
+
+  // randomly-generated input
   for (s <- 0 until ntries) {
     val (in, sh) = genNumber()
     val str = toBinStr(in)
