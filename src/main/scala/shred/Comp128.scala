@@ -71,6 +71,16 @@ class Comp128() extends Module {
   lastcat.io.inAmask := cat8in(0).io.outmask
   lastcat.io.inBmask := cat8in(1).io.outmask
 
-  io.out := lastcat.io.out
-  io.outmask := lastcat.io.outmask
+
+  val reg_out = RegInit(VecInit(Seq.fill(nblocks)(0.U(bwblock.W))))
+  val reg_outmask = RegInit(0.U(nblocks.W))
+
+  reg_out := lastcat.io.out
+  reg_outmask := lastcat.io.outmask
+
+  io.out := reg_out
+  io.outmask := reg_outmask
+
+  //io.out := lastcat.io.out
+  //io.outmask := lastcat.io.outmask
 }
