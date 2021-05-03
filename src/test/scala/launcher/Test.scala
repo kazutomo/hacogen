@@ -47,7 +47,7 @@ object Main extends App {
     "STBuf"           -> (() => STBufTest.run(args2), "onerowold"),
     "Squeeze"         -> (() => SqueezeTest.run(args2), "onerowold"),
     "SHComp"          -> (() => SHCompTest.run(args2), "onerowold"),
-    "Comp"            -> (() => CompTest.run(args2), "onerowold")
+    "CompOne"         -> (() => CompTest.run(args2), "onerowold")
   )
 
   TestUtil.launch(args, targetmap)
