@@ -5,6 +5,7 @@ package shred
 
 import chisel3._
 import chisel3.util._
+import chisel3.util.log2Ceil
 
 // This logic concatenates the non-zero contents of inA and inB.
 // It takes two input buses (inA and inB), where each input
@@ -62,6 +63,70 @@ class ConcatZeroStrip(val nelems:Int = 2, val bw:Int = 10) extends Module {
     }
 
     val nshift = nelems.U - popcA
+
+    for (i <- 0 until nelems_out)  {
+      val lookuplist = createMuxLookupList(i)
+
+      val lookups = lookuplist.zipWithIndex.map { case (wireidx, sel) => sel.U -> inAB(wireidx) }
+
+      io.out(i) := MuxLookup(nshift, inAB(i), lookups)
+    }
+
+    // testing this mux lookup algorithm
+    // List.tabulate(n*2) { i =>  List.tabulate(n+1) {j => if (i<n) { if (j<(n-i)) i else j+i } else { if ((j+i) < n*2) j+i else n*2 -1} } }
+
+  } .otherwise {
+    // no shift is required, simply wiring up. since shift 0 is direct connection, this is not needed?
+    for (i <- 0 until nelems_out)  io.out(i) := inAB(i)
+  }
+}
+
+
+// ConcatZeroStripLen() is basically the same as ConcatZeroStrip(),
+// except that this takes the length of the continuous non-zero
+// contents in the input rather than mask
+
+class ConcatZeroStripLen(val nelems:Int = 2, val bw:Int = 10) extends Module {
+  require( bw <= 64)
+
+  val nelems_out = nelems * 2 // for convenience
+
+  val io = IO(new Bundle {
+    val inA  = Input(Vec(nelems, UInt(bw.W))) // the contents are sorted
+    val inB  = Input(Vec(nelems, UInt(bw.W)))
+    val inAlen = Input(UInt(log2Ceil(nelems+1).W))
+    val inBlen = Input(UInt(log2Ceil(nelems+1).W))
+    val out    = Output(Vec(nelems_out,  UInt(bw.W))) // the contents are sorted
+    val outlen = Output(UInt(log2Ceil(nelems_out+1).W))
+    // input and output masks retain the original location of non-zero elements
+  })
+
+  // linearize the twoinputs, combining A and B into a single vector
+  // of wires.
+  val inAB = Wire(Vec(nelems_out+1, UInt(bw.W)))
+  for (i <- 0 until nelems) {
+    inAB(i)        := io.inA(i)
+    inAB(i+nelems) := io.inB(i)
+  }
+  inAB(nelems_out) := 0.U
+
+  io.outlen := io.inAlen + io.inBlen
+
+  // The contents of inB is shifted only when inA is partially
+  // occupied and inB has at least one non-zero elem. If all the
+  // elements of inA is non-zero, we don't need to shift.
+  when ( io.inAlen =/= nelems.U && io.inBlen =/= 0.U ) {
+
+    // this function returns a list that includes the index of wire
+    // for each condition for target muxid.
+    def createMuxLookupList(muxid : Int) : List[Int]  = {
+      List.tabulate(nelems+1) {j =>
+        if (muxid < nelems) { if (j<(nelems-muxid)) muxid         else j+muxid }
+        else                { if ((j+muxid) < nelems_out) j+muxid else nelems_out}
+      }
+    }
+
+    val nshift = nelems.U - io.inAlen
 
     for (i <- 0 until nelems_out)  {
       val lookuplist = createMuxLookupList(i)
