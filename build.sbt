@@ -27,7 +27,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-version := "0.6.0"
+version := "0.7.0"
 
 name := "hacogen"
 
@@ -40,9 +40,15 @@ scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-language:refle
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 // The following are the current "release" versions.
 val defaultVersions = Map(
-  "chisel3" -> "3.1.+",
-  "chisel-iotesters" -> "1.2.+"
-  )
+  //"chisel3" -> "3.1.+",
+  //"chisel-iotesters" -> "1.2.+"
+  //"chisel3" -> "3.2.+",
+  //"chisel-iotesters" -> "1.3.+"
+  //"chisel3" -> "3.3.+",
+  //"chisel-iotesters" -> "1.4.+"
+  "chisel3" -> "3.4.+",
+  "chisel-iotesters" -> "1.5.+"
+)
 
 libraryDependencies ++= (Seq("chisel3","chisel-iotesters").map {
   dep: String => "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep)) })

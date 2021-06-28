@@ -2,13 +2,15 @@
 // utitilies for test codes
 //
 // written by Kazutomo Yoshii <kazutomo.yoshii@gmail.com>
-// 
+//
 package testutil
 
+import chisel3.MultiIOModule  // added to upgrade to 3.2
 import chisel3.iotesters
 import chisel3.iotesters.{Driver, PeekPokeTester}
 import chisel3.experimental._
 
+import chisel3.stage.ChiselStage // >= 3.2.0
 
 object TestUtil {
 
@@ -125,9 +127,10 @@ object TestUtil {
   }
 
   def driverhelper[T <: MultiIOModule](args: Array[String], dutgen : () => T, testergen: T => PeekPokeTester[T]) {
-    // Note: is chisel3.Driver.execute a right way to generate
-    // verilog, or better to use (new ChiselStage).emitVerilog()?
-    if (verilogonly) chisel3.Driver.execute(args, dutgen)
+    if (verilogonly) {
+      //chisel3.Driver.execute(args, dutgen)  // worked in 3.1
+      (new ChiselStage).emitVerilog(dutgen())
+    }
     else           iotesters.Driver.execute(args, dutgen) {testergen}
   }
 
@@ -175,6 +178,8 @@ object TestUtil {
   // getoptint(args, "len", 16). If '-len' is found, the returned args
   // is the same as the input args and optval is dval. If found, the
   // returned args does not include '-len INT' and optval is INT.
+  // XXX: uncomment the line below
+  //@deprecated("This function will be removed soon","??-??-2021")
   def getoptint(args: Array[String], opt: String, dval: Int) :
       (Array[String], Int) = {
 
