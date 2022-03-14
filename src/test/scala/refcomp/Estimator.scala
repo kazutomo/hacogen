@@ -122,8 +122,8 @@ object Estimator {
               val fn = "tmp-shuffled-in-out.txt" // ad-hoc
               try {
                 val out = new FileOutputStream(fn, true)
-                out.write((block.mkString(" ")+"\n").getBytes)
-                out.write((bs.mkString(" ")+"\n\n").getBytes)
+                out.write((block.mkString(" ")+"\n").getBytes) // input
+                out.write((bs.mkString(" ")+"\n\n").getBytes) // shuffled
                 out.close()
               } catch {
                 case e: FileNotFoundException => println("Not found:" + fn)
